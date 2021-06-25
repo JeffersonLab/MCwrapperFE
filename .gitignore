@@ -1,0 +1,6 @@
+php/readerConnection.php
+php/vsConnection.php
+php/writerConnection.php
+.htaccess
+news.news
+.vscode/settings.json
