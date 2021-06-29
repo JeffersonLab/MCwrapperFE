@@ -430,15 +430,15 @@ function QueryDatabase()
         xmlhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
                 var result_to_use;
-                //console.log(this.responseText)
+                
                 if(this.responseText != "")
                 {
                 result=JSON.parse(this.responseText);
-                return_code=result[0]["return_code"];
-                if(return_code=="coh328nm9d9odhu5tgio48i")
-                    foreman=true;
+                //return_code=result[0]["return_code"];
+                //if(return_code=="coh328nm9d9odhu5tgio48i")
+                //    foreman=true;
                 //result.shift();
-
+                console.log(result)
                 result_to_use=result;
 
                 subIPs=[]
@@ -520,9 +520,9 @@ function QueryDatabase()
                 {
                 result=JSON.parse(this.responseText);
                 console.log(result)
-                return_code=result[0]["return_code"];
-                if(return_code=="coh328nm9d9odhu5tgio48i")
-                    foreman=true;
+                //return_code=result[0]["return_code"];
+                //if(return_code=="coh328nm9d9odhu5tgio48i")
+                //    foreman=true;
                 //result.shift();
 
                 result_to_use=result;
@@ -559,19 +559,26 @@ function QueryDatabase()
 
   function StoreResult(result,table)
   {
+    //console.log("STORING");
     if (result.length==0)
         return;
     //console.log(result);
-    //console.log(foreman);
+    //console.log(result.length);
+    //console.log("LOOPING")
     var rows=[];
-    for(var i=0; i< result.length;i++)
+    for(var i=0; i< result.data.length;i++)
     {
-        rows.push(result[i]);
+        console.log(result.data[i])
+        rows.push(result.data[i]);
     }
+    console.log(rows)
     qresult=rows.reverse();
-
+    
+    console.log(qresult)
+    console.log(table);
     if(table=="Project")
     {
+
         MakeProjectTable(qresult);
     }
     else if( table == "Jobs")
@@ -586,6 +593,7 @@ function QueryDatabase()
       ProjDataSet=[];
       ProjColumnDefs=[];
 
+    console.log(resultArray)
       if(resultArray.length > 0)
       {
 
