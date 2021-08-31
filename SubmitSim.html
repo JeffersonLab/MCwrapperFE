@@ -35,8 +35,8 @@
                           but hey, it's pure CSS magic.
                           -->
                           <ul id="menu">
-                            <a href="https://halldwebdev.jlab.org/gluex_sim/Dashboard.html"><li>Dashboard</li></a>
-                            <a href="https://halldwebdev.jlab.org/gluex_sim/Records.html"><li>Records</li></a>
+                            <a href="https://halldweb.jlab.org/gluex_sim/Dashboard.html"><li>Dashboard</li></a>
+                            <a href="https://halldweb.jlab.org/gluex_sim/Records.html"><li>Records</li></a>
                             <a href="https://github.com/JeffersonLab/gluex_MCwrapper"><li>Github Repository</li></a>
                             <a href="https://www.overleaf.com/read/bqynmnwstzfx"><li>Documentation</li></a>
                             <a href="mailto: tbritton@jlab.org;ppauli@jlab.org"><li>Contact Me</li></a>
@@ -2104,7 +2104,7 @@ function MakeCheckButton()
 function GetReactions()
 {
 
-    popup=window.open("https://halldwebdev.jlab.org/gluex_sim/ReactionFilterLines.html", "popupwindow", 'width=800,height=600');
+    popup=window.open("./ReactionFilterLines.html", "popupwindow", 'width=800,height=600');
 
 
     popup.onload = function()
@@ -2280,7 +2280,7 @@ function updateBKGoptions()
             document.getElementById("randomtag").replaceWith(randomtag)
 
             document.getElementById("randomtag").style.width="38%"
-            randtags=["recon-2017_01-ver02","recon-2017_01-ver03.2","recon-2018_01-ver02","recon-2018_08-ver00","recon-2018_08-ver01","recon-2018_08-ver02.2","recon-2019_01-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
+            randtags=["recon-2017_01-ver02","recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver00","recon-2018_08-ver01","recon-2018_08-ver02.2","recon-2019_01-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
 
             randtags.forEach(function(element) {
                 halld_reconVer=document.getElementById("recon_stack")

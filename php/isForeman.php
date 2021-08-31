@@ -1,7 +1,8 @@
 <?php
 require_once "readerConnection.php";
+
 $fsql = "SELECT name from Users where Foreman=1;";
-$fresult = $rconn->query($fsql);
+$fresult = $conn->query($fsql);
 
 $foremen=[];
 
@@ -10,7 +11,7 @@ while ($frow = $fresult->fetch_assoc()) {
     $foremen[]=$frow["name"];
 }
 #print_r($fresult->fetch);
-$rconn->close();
+$conn->close();
 
 if (in_array($_SERVER['PHP_AUTH_USER'],$foremen,TRUE))
 {
