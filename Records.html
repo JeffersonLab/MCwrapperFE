@@ -44,9 +44,9 @@ var result=[];
     
     
         setInterval(function (){
-            newsource="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"+Date.now()
+            newsource="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"+Date.now()
             document.getElementById('condor_running').src=newsource
-            newsource_idle="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs?"+Date.now()
+            newsource_idle="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs?"+Date.now()
             document.getElementById('condor_idle').src=newsource_idle
         },5000)
 
@@ -1143,9 +1143,9 @@ function disposeHierarchy (node, callback)
                     </div>
                     <div id="graphs">
                     
-                    <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs" id="condor_running"/>
+                    <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs" id="condor_running"/>
                     
-                    <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs" id="condor_idle"/>
+                    <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs" id="condor_idle"/>
                     
                     </div>
         

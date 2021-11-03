@@ -52,9 +52,9 @@ var result=[];
     
     
         setInterval(function (){
-            newsource="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"+Date.now()
+            newsource="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"+Date.now()
             document.getElementById('condor_running').src=newsource
-            newsource_idle="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs?"+Date.now()
+            newsource_idle="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs?"+Date.now()
             document.getElementById('condor_idle').src=newsource_idle
         },10000)
         
@@ -482,14 +482,14 @@ function QueryDatabase()
                 
                 result=JSON.parse(this.responseText);
 
-                result_to_use=result;
+                result_to_use=result.data;
 
                 subIPs=[]
-                for(var i=0;i<result.length;i++)
+                for(var i=0;i<result.data.length;i++)
                 {
-                    if(result[i]["UIp"])
+                    if(result.data[i]["UIp"])
                     {
-			            subIPs.push(result[i]["UIp"]);
+			            subIPs.push(result.data[i]["UIp"]);
                         //IPMapper.addIPMarker(result[i]["UIp"]);
                     }
                 }
@@ -1308,9 +1308,9 @@ function GetNews()
             </div>
             <div id="graphs">
             
-            <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs" id="condor_running"/>
+            <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs" id="condor_running"/>
             
-            <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg16.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs" id="condor_idle"/>
+            <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs" id="condor_idle"/>
             
             </div>
 

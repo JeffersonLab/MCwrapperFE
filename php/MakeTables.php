@@ -7,7 +7,7 @@ if (!$conn) {
 }
 $sql = "SELECT * FROM " . $_GET["Table"];
 
-if ( $_GET["projID"] && $_GET["Table"]=="Jobs")
+if ( isset($_GET["projID"]) && $_GET["Table"]=="Jobs")
 {
     $sql=$sql . " WHERE Project_ID=" . $_GET["projID"];
 }
@@ -15,7 +15,7 @@ if ( $_GET["projID"] && $_GET["Table"]=="Jobs")
 if($_GET["Table"]=="ProjectF")
 {
     //$sql="SELECT * FROM Attempts WHERE Job_ID IN (SELECT ID FROM Jobs WHERE Project_ID=" . $_GET["projID"] . ") GROUP BY Job_ID;";
-    $sql="SELECT ID,Email,Submit_Time,Tested,Is_Dispatched,Dispatched_Time,Completed_Time,RunNumLow,RunNumHigh,NumEvents,Generator,BKG,OutputLocation,RCDBQuery,VersionSet,ANAVersionSet FROM Project where Notified IS NULL";
+    $sql="SELECT ID,Email,Submit_Time,Tested,Is_Dispatched,Dispatched_Time,Completed_Time,RunNumLow,RunNumHigh,NumEvents,Generator,BKG,OutputLocation,RCDBQuery,VersionSet,ANAVersionSet,UIp FROM Project where Notified IS NULL";
 //    $sql="SELECT Attempts.*,Max(Attempts.Creation_Time) FROM Attempts,Jobs WHERE Attempts.Job_ID = Jobs.ID && Jobs.Project_ID=" . $_GET["projID"] . " GROUP BY Attempts.Job_ID;";
 }
 
@@ -45,7 +45,7 @@ if($_GET["Table"]=="RunMap")
 
 $lock=FALSE;
 
-if($_GET["lock"])
+if(isset($_GET["lock"]))
 {
     $lock=$_GET["lock"];
 }
@@ -87,7 +87,10 @@ if ($result->num_rows > 0) {
         #echo "\n";
         $denom=(float) $totpresult->fetch_assoc()["COUNT(ID)"];
         
-
+        if($denom==0)
+        {
+            $denom=1;
+        }
         $percent=round($num/$denom*100,2);
         $fpercent=round($fnum/$denom*100,2);
         $row["Progress"]=$percent;

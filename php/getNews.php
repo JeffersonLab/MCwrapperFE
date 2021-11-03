@@ -1,6 +1,6 @@
 <?php
 #return;
-    $files=scandir("./news/");
+    $files=scandir("../news/");
 
     $newsdata = array();
     foreach ($files as $file)

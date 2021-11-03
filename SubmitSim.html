@@ -801,7 +801,7 @@ function MakeGluexForm()
     outputloc.placeholder="My_MC"
     outputloc.required=true;
     outputloc.title="The root title of the output directory. NOT the full path. \nNo more than 1 / allowed)"
-    //outputloc.pattern="[^()/><\][\\\x22,;|]+"
+    outputloc.pattern="[^()\/{,2}><\][\\\x22,;|]+"
     outputloc.style.width="60%";
     form.appendChild(outputloc);
 
@@ -840,7 +840,15 @@ function MakeGluexForm()
     genconfloc.title="The full path for the file that configures the above generator. It and the containing directories must be readable and reachable from the interactive farm."
     genconfloc.style.width="60%";
     form.appendChild(genconfloc);
-
+    var genconf_q=document.createElement("IMG");
+    genconf_q.src="./imgs/q_mark.png"
+    genconf_q.style.height='20px'
+    genconf_q.style.width='20px'
+    genconf_q.onclick = function() {
+        window.open('https://github.com/JeffersonLab/gluex_MCwrapper/tree/master/Generators',"_blank")
+    //window.location.href = 'https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form';
+    };
+    form.appendChild(genconf_q)
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))
 
@@ -2279,7 +2287,7 @@ function updateBKGoptions()
             document.getElementById("randomtag").replaceWith(randomtag)
 
             document.getElementById("randomtag").style.width="38%"
-            randtags=["recon-2017_01-ver02","recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver00","recon-2018_08-ver01","recon-2018_08-ver02.2","recon-2019_01-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
+            randtags=["recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
 
             randtags.forEach(function(element) {
                 halld_reconVer=document.getElementById("recon_stack")
@@ -2504,6 +2512,12 @@ function PopulateVer(id,result)
 
     for(var i=0;i<result.length;i++)
     {
+
+        if(id=="verSet" && result[i].version=="version_4.45.1.xml")
+        {
+            continue
+        }
+
         var newoption = document.createElement("option");
 
 

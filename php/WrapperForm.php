@@ -366,6 +366,19 @@ function InsertProject($conn)
         #$configstub = $configstub . "GENERATOR_CONFIG=" . $_GET["generator_config"] . "\n";
         #$configstub = $configstub . "GEANT_VERSION=" . $_GET["Geantver"] . "\n";
 
+        $genpost_processor="None";
+        $genpost_config="Default";
+        $genpost_evt="Default";
+        $genpost_dec="Default";
+
+        #if($_GET["genpost_processor"] != "None")
+        #{
+        #    $genpost_processor=$_GET["genpost_processor"];
+        #    $genpost_config=$_GET["genpost_config"];
+        #    $genpost_evt=$_GET["genpost_evt"];
+        #    $genpost_dec=$_GET["genpost_dec"];
+        #}
+
         $bkg = $_GET["bkg"];
 
         if ( $_GET["bkg"] == "loc" )
