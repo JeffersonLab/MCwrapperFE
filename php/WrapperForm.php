@@ -141,6 +141,41 @@ function UpdateProject($conn)
     }
     #$configstub = $configstub . "BKG=" . $bkg . "\n";
 
+    $genpost_str="";
+    if ( $_GET["GenPost"] != "None" )
+    {
+        $genpost_str = $_GET["GenPost"];
+        if( $genpost_str == "decay_evtgen")
+        {
+            #three file strings
+            if( $_GET["f1_input"] == "" || $_GET["f1_input"] == "Default" )
+            {
+                $genpost_str = $genpost_str . ":Default";
+            }
+            else
+            {
+                $genpost_str = $genpost_str . ":" . $_GET["f1_input"];
+            }
+
+            if( $_GET["f2_input"] == "" || $_GET["f2_input"] == "Default" )
+            {
+                $genpost_str = $genpost_str . ":Default";
+            }
+            else
+            {
+                $genpost_str = $genpost_str . ":" . $_GET["f2_input"];
+            }
+
+            if( $_GET["f3_input"] == "" || $_GET["f3_input"] == "Default" )
+            {
+                $genpost_str = $genpost_str . ":Default";
+            }
+            else
+            {
+                $genpost_str = $genpost_str . ":" . $_GET["f3_input"];
+            }
+        }
+    }
  
     #$msg = $msg . $configstub;
     #echo "CONNECTING";
@@ -162,12 +197,12 @@ function UpdateProject($conn)
        . " ,SaveGeneration=?, RunGeant=?, SaveGeant=?, RunSmear=?, SaveSmear=? "
        . ", RunReconstruction=?, SaveReconstruction=?, Generator=?, Generator_Config=? "
        . ", BKG=?, Comments=?, GenMinE=?, GenMaxE=?,GeantSecondaries=?,VersionSet=?,ReactionLines=? "
-       . ", RCDBQuery=?, CoherentPeak=?, Tested=0, GenFlux=?,ANAVersionSet=?"
+       . ", RCDBQuery=?, CoherentPeak=?, Tested=0, GenFlux=?,ANAVersionSet=?,GenPostProcessing=?"
        . " WHERE ID=?";
 
     $stmt = $conn->prepare($sql);
 
-    $stmt->bind_param("iiiiiiiiiiiissssddisssdssi", $runlow, $runhigh,
+    $stmt->bind_param("iiiiiiiiiiiissssddisssdsssi", $runlow, $runhigh,
     $_GET["numevents"], $_GET["Geantver"], $rungen,
     $savegen, $rungeant, $savegeant, $runsmear, $savesmear,
     $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"],
@@ -366,18 +401,43 @@ function InsertProject($conn)
         #$configstub = $configstub . "GENERATOR_CONFIG=" . $_GET["generator_config"] . "\n";
         #$configstub = $configstub . "GEANT_VERSION=" . $_GET["Geantver"] . "\n";
 
-        $genpost_processor="None";
-        $genpost_config="Default";
-        $genpost_evt="Default";
-        $genpost_dec="Default";
+        #generator post-processing string
+        $genpost_str="";
+        if ( $_GET["GenPost"] != "None" )
+        {
+            $genpost_str = $_GET["GenPost"];
+            if( $genpost_str == "decay_evtgen")
+            {
+                #three file strings
+                if( $_GET["f1_input"] == "" || $_GET["f1_input"] == "Default" )
+                {
+                    $genpost_str = $genpost_str . ":Default";
+                }
+                else
+                {
+                    $genpost_str = $genpost_str . ":" . $_GET["f1_input"];
+                }
 
-        #if($_GET["genpost_processor"] != "None")
-        #{
-        #    $genpost_processor=$_GET["genpost_processor"];
-        #    $genpost_config=$_GET["genpost_config"];
-        #    $genpost_evt=$_GET["genpost_evt"];
-        #    $genpost_dec=$_GET["genpost_dec"];
-        #}
+                if( $_GET["f2_input"] == "" || $_GET["f2_input"] == "Default" )
+                {
+                    $genpost_str = $genpost_str . ":Default";
+                }
+                else
+                {
+                    $genpost_str = $genpost_str . ":" . $_GET["f2_input"];
+                }
+
+                if( $_GET["f3_input"] == "" || $_GET["f3_input"] == "Default" )
+                {
+                    $genpost_str = $genpost_str . ":Default";
+                }
+                else
+                {
+                    $genpost_str = $genpost_str . ":" . $_GET["f3_input"];
+                }
+            }
+        }
+
 
         $bkg = $_GET["bkg"];
 
@@ -418,18 +478,18 @@ function InsertProject($conn)
                                  . " NumEvents, GeantVersion, OutputLocation, Submit_Time, RunGeneration, "
                                  . " SaveGeneration, RunGeant, SaveGeant, RunSmear, SaveSmear, "
                                  . " RunReconstruction, SaveReconstruction, Generator, Generator_Config, Config_Stub, "
-                                 . " BKG, Comments, GenMinE, GenMaxE,GeantSecondaries,VersionSet,UName,UIp,ReactionLines,RCDBQuery, CoherentPeak, wc,GenFlux,ANAVersionSet)"
+                                 . " BKG, Comments, GenMinE, GenMaxE,GeantSecondaries,VersionSet,UName,UIp,ReactionLines,RCDBQuery, CoherentPeak, wc,GenFlux,ANAVersionSet ,GenPostProcessing)"
                                  . " VALUES (?, ?,?,'0', ?, ?, "
                                  . " ?, ?, ?, now(), ?, "
                                  . " ?, ?, ?, ?, ?, "
                                  . " ?, ?, ?, ?, ?, "
-                                 . " ?, ?,?,?,?,?,?,?,?,?,?,?,?,?) ";
+                                 . " ?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
         $stmt = $conn->prepare($sql);
 
-        $stmt->bind_param("sssiiiisiiiiiiiisssssddisssssddss", $_GET["username"], $_GET["useremail"], $_GET["exp"],$runlow, $runhigh, $_GET["numevents"],
+        $stmt->bind_param("sssiiiisiiiiiiiisssssddisssssddsss", $_GET["username"], $_GET["useremail"], $_GET["exp"],$runlow, $runhigh, $_GET["numevents"],
                   $_GET["Geantver"], $fullOutput, $rungen, $savegen, $rungeant,
                   $savegeant, $runsmear, $savesmear, $runrecon, $saverecon,
-                  $_GET["generator"], $_GET["generator_config"], $configstub, $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"],$geant_secondaries,$VerSet,$_SERVER['PHP_AUTH_USER'],$_SERVER['REMOTE_ADDR'],$RL,$rcdb_query,$coherent,$_GET["spend"],$_GET["Genflux"],$anaVerSet);
+                  $_GET["generator"], $_GET["generator_config"], $configstub, $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"],$geant_secondaries,$VerSet,$_SERVER['PHP_AUTH_USER'],$_SERVER['REMOTE_ADDR'],$RL,$rcdb_query,$coherent,$_GET["spend"],$_GET["Genflux"],$anaVerSet,$genpost_str);
 
         //echo $sql;
         //echo "<br>";
@@ -438,6 +498,12 @@ function InsertProject($conn)
         } else {
 
             echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
+            $msg="Oh no! Something went wrong when inserting this new project!";
+            $msg=$msg . "<br>" . "I have emailed tbritton@jlab.org the following error:" . "<br>";
+            $msg=$msg . "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
+            mail("tbritton@jlab.org," . $_GET["useremail"],"MC Request #" . $row["MAX(ID)"] ,$msg);
+            exit();
+
         }
 
         $spendq="Update Users SET wc=wc-?" . " where name=\"" .  $_SERVER['PHP_AUTH_USER'] . "\"";

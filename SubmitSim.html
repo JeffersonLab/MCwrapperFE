@@ -381,6 +381,20 @@ function LoopAndFill(result)
         document.getElementById("cobrems_flux").checked=true;
     }
 
+    if(result.GenPostProcessing)
+    {
+        //split by colon
+        var post_list=result.GenPostProcessing.split(":")
+        MakeSelectedByValue(document.getElementById("GenPost"),post_list[0])
+        updateGenPost();
+        if(post_list[0]=="decay_evtgen")
+        {
+            document.getElementById("f1_input").value=post_list[1]
+            document.getElementById("f2_input").value=post_list[2]
+            document.getElementById("f3_input").value=post_list[3]
+        }
+    }
+
     if(result.GeantVersion == "3")
     {
         document.getElementById("Geant3").checked=true;
@@ -914,6 +928,23 @@ function MakeGluexForm()
     form.appendChild(maxEin);
 
     form.appendChild(document.createElement("BR"))
+    //form.appendChild(document.createElement("BR"))
+
+    //GENERATOR POST-PROCESSING
+    var genpostlabel=document.createElement("LABEL");
+    genpostlabel.setAttribute("for", "GenPost");
+    genpostlabel.appendChild(document.createTextNode("Post-Processing:"))
+    form.appendChild(genpostlabel)
+    var genpostselect=document.createElement("SELECT")
+    genpostselect.id="GenPost"
+    genpostselect.name="GenPost"
+    genpostselect.setAttribute("onchange","updateGenPost();MakeCheckButton();");
+    form.appendChild(genpostselect)
+
+    populateGenPost("GlueX");
+    var geant_br_anchor=document.createElement("BR")
+    geant_br_anchor.id="geant_br_anchor"
+    form.appendChild(geant_br_anchor)
     form.appendChild(document.createElement("BR"))
 
     //GEANT VER
@@ -964,6 +995,8 @@ function MakeGluexForm()
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))
+
+
     //BACKGROUNDS
     var bkglabel=document.createElement("LABEL");
     bkglabel.setAttribute("for", "bkgconf");
@@ -2260,7 +2293,61 @@ function addANAselector()
 
     }
 }
+function updateGenPost()
+{
+    
+    var genPost_sel=document.getElementById("GenPost");
+    var genPost_sel_val=genPost_sel.value;
+    removeChildrenBetween("GenPost","geant_br_anchor")
+    if(genPost_sel_val=="decay_evtgen")
+    {
+        
+        var geant_br_anchor=document.getElementById("geant_br_anchor");
+        var anchor_br=document.createElement("BR")
+        geant_br_anchor.parentNode.insertBefore(anchor_br,geant_br_anchor)
+        
 
+        var genpostf1label=document.createElement("LABEL");
+        genpostf1label.setAttribute("for", "f1_input");
+        genpostf1label.appendChild(document.createTextNode("decay_evtgen Config"))
+
+        var f1_input=document.createElement("INPUT");
+        f1_input.setAttribute("type","text");
+        f1_input.id="f1_input";
+        f1_input.name="f1_input";
+        f1_input.placeholder="Default"
+        geant_br_anchor.parentNode.insertBefore(genpostf1label,geant_br_anchor)
+        geant_br_anchor.parentNode.insertBefore(f1_input,geant_br_anchor)
+
+
+        var genpostf2label=document.createElement("LABEL");
+        genpostf2label.setAttribute("for", "f2_input");
+        genpostf2label.appendChild(document.createTextNode("pdl"))
+
+        var f2_input=document.createElement("INPUT");
+        f2_input.setAttribute("type","text");
+        f2_input.id="f2_input";
+        f2_input.name="f2_input";
+        f2_input.placeholder="Default"
+        geant_br_anchor.parentNode.insertBefore(genpostf2label,geant_br_anchor)
+        geant_br_anchor.parentNode.insertBefore(f2_input,geant_br_anchor)
+
+        var genpostf3label=document.createElement("LABEL");
+        genpostf3label.setAttribute("for", "f3_input");
+        genpostf3label.appendChild(document.createTextNode("dec"))
+
+        var f3_input=document.createElement("INPUT");
+        f3_input.setAttribute("type","text");
+        f3_input.id="f3_input";
+        f3_input.name="f3_input";
+        f3_input.placeholder="Default"
+        geant_br_anchor.parentNode.insertBefore(genpostf3label,geant_br_anchor)
+        geant_br_anchor.parentNode.insertBefore(f3_input,geant_br_anchor)
+
+    }
+
+
+}
 function updateBKGoptions()
     {
         var sel=document.getElementById("bkg");
@@ -2350,6 +2437,20 @@ function updateBKGoptions()
             }
         }
 }
+function populateGenPost(exp)
+{
+    var genpost=document.getElementById("GenPost");
+    var post_options=["None","decay_evtgen"]
+    post_options.forEach(function(element) {
+        var sel=false;
+        if(element=="None")
+        {
+            sel=true;
+        }
+        MakeOption(genpost,element,sel)
+    });
+
+}
 function populateBackgrounds(exp)
 {
     var bkgsel=document.getElementById("bkg");
@@ -2413,6 +2514,21 @@ function removeElementByID(id)
     {
         var el=document.getElementById(id)
         el.parentNode.removeChild(el);
+    }
+}
+function removeChildrenBetween(start,end)
+{
+    var startel=document.getElementById(start)
+    var endel=document.getElementById(end)
+
+    if(startel ==null || endel ==null)
+    {
+        return;
+    }
+    var parent=startel.parentNode;
+    while(startel.nextSibling!=endel)
+    {
+        parent.removeChild(startel.nextSibling);
     }
 }
 function updateRangeoptions()
