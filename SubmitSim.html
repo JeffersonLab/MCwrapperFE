@@ -835,6 +835,14 @@ function MakeGluexForm()
     genselect.setAttribute("onchange","updateGenConfig();MakeCheckButton();");
     //verselect.onchange="updatePreview();MakeCheckButton()"
     form.appendChild(genselect)
+    var gen_q=document.createElement("IMG");
+    gen_q.src="./imgs/q_mark.png"
+    gen_q.style.height='20px'
+    gen_q.style.width='20px'
+    gen_q.onclick = function() {
+        window.open('https://halldweb.jlab.org/wiki/index.php/Event_generators',"_blank")
+    };
+    form.appendChild(gen_q)
 
     populateGenerators("GlueX");
 
@@ -2234,7 +2242,7 @@ function addANAselector()
         //console.log("build ana set")
         var anaverselect=document.createElement("SELECT");
         anaverselect.id="anaverSet";
-        anaverselect.name="ANAVersionSet"
+        anaverselect.name="anaverSet"
         anaverselect.setAttribute("onchange","updatePreview();MakeCheckButton();");
         //verselect.onchange="updatePreview();MakeCheckButton()"
         //form.appendChild(anaverselect)

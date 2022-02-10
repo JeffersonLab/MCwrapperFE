@@ -53,6 +53,7 @@ var result=[];
     
         setInterval(function (){
             newsource="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"+Date.now()
+            //newsource="http://sci-prometheus.jlab.org:3000/d/_XK5tYPWk/condor-general-view?orgId=1&from=now-1h&to=now"
             document.getElementById('condor_running').src=newsource
             newsource_idle="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs?"+Date.now()
             document.getElementById('condor_idle').src=newsource_idle

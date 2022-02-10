@@ -22,7 +22,7 @@ function UpdateProject($conn)
 
     $rcdb_query="";
 
-    if($_GET["rcdbq"] != "")
+    if( isset($_GET["rcdbq"]) )
     {
         $rcdb_query=$_GET["rcdbq"];
         $rcdb_query=str_replace("&&","and",$rcdb_query);
@@ -37,58 +37,58 @@ function UpdateProject($conn)
 
     $anaVerSet=NULL;
 
-    if( $_GET["ANAVersionSet"] != "" )
+    if( $_GET["anaverSet"] != "" )
     {
-        $anaVerSet=$_GET["ANAVersionSet"];
+        $anaVerSet=$_GET["anaverSet"];
     }
 
     $coherent=NULL;
 
-    if($_GET["cohPos"] != "")
-    {
-        $coherent=$_GET["cohPos"];
-    }
+    if( isset($_GET["cohPos"]) )
+        {
+            $coherent=$_GET["cohPos"];
+        }
 
-    if ( $_GET["GeantSecondaries"] != "")
-    {
-        $geant_secondaries = 1;
-    }
+        if ( isset($_GET["GeantSecondaries"]) )
+        {
+            $geant_secondaries = 1;
+        }
 
-    if ( $_GET["RunGeneration"] != "")
-    {
-        $rungen = 1;
-    }
-    if ( $_GET["SaveGeneration"] != "")
-    {
-        $savegen = 1;
-    }
+        if ( isset($_GET["RunGeneration"]) )
+        {
+            $rungen = 1;
+        }
+        if ( isset($_GET["SaveGeneration"]) )
+        {
+            $savegen = 1;
+        }
 
-    if ( $_GET["RunGeant"] != "")
-    {
-        $rungeant = 1;
-    }
-    if ( $_GET["SaveGeant"] != "")
-    {
-        $savegeant = 1;
-    }
+        if ( isset($_GET["RunGeant"]) )
+        {
+            $rungeant = 1;
+        }
+        if ( isset($_GET["SaveGeant"]) )
+        {
+            $savegeant = 1;
+        }
 
-    if ( $_GET["RunSmear"] != "")
-    {
-        $runsmear = 1;
-    }
-    if ( $_GET["SaveSmear"] != "")
-    {
-        $savesmear = 1;
-    }
+        if ( isset($_GET["RunSmear"] )
+        {
+            $runsmear = 1;
+        }
+        if ( isset($_GET["SaveSmear"] )
+        {
+            $savesmear = 1;
+        }
 
-    if ( $_GET["RunRecon"] != "")
-    {
-        $runrecon = 1;
-    }
-    if ( $_GET["SaveRecon"] != "")
-    {
-        $saverecon = 1;
-    }
+        if ( isset($_GET["RunRecon"]) )
+        {
+            $runrecon = 1;
+        }
+        if ( isset($_GET["SaveRecon"]) )
+        {
+            $saverecon = 1;
+        }
 
     $msg = $_GET["username"] . ", I received your request to update your Monte Carlo project on " . $dateNOW . " at " . $timeNOW . "\n";
     #echo $msg;
@@ -192,23 +192,22 @@ function UpdateProject($conn)
         $newuserstmt->execute();
     }
 
-    $sql = "Update Project SET RunNumLow=?, RunNumHigh=? "
-       . " ,NumEvents=?, GeantVersion=?, RunGeneration=? "
+    $sql = "Update Project SET RunNumLow=?, RunNumHigh=? " . ", NumEvents=?, GeantVersion=?, RunGeneration=? "
        . " ,SaveGeneration=?, RunGeant=?, SaveGeant=?, RunSmear=?, SaveSmear=? "
-       . ", RunReconstruction=?, SaveReconstruction=?, Generator=?, Generator_Config=? "
-       . ", BKG=?, Comments=?, GenMinE=?, GenMaxE=?,GeantSecondaries=?,VersionSet=?,ReactionLines=? "
-       . ", RCDBQuery=?, CoherentPeak=?, Tested=0, GenFlux=?,ANAVersionSet=?,GenPostProcessing=?"
-       . " WHERE ID=?";
+       . ", RunReconstruction=?, SaveReconstruction=?, Generator=?, Generator_Config=? " . ", BKG=? " 
+       . ", Comments=?, GenMinE=?, GenMaxE=?,GeantSecondaries=?,VersionSet=? "
+       . ", ReactionLines=? " . ", RCDBQuery=?, CoherentPeak=?, Tested=0, GenFlux=? "
+       . ", ANAVersionSet=?,GenPostProcessing=?" . " WHERE ID=?";
 
     $stmt = $conn->prepare($sql);
-
-    $stmt->bind_param("iiiiiiiiiiiissssddisssdsssi", $runlow, $runhigh,
-    $_GET["numevents"], $_GET["Geantver"], $rungen,
-    $savegen, $rungeant, $savegeant, $runsmear, $savesmear,
-    $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"],
-    $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"], $geant_secondaries, $_GET["versionSet"],$_GET["ReactionLines"],
-    $rcdb_query, $coherent,$_GET["Genflux"],$anaVerSet,
-    $_GET["prefill"]);
+  
+    $stmt->bind_param("iiiiiiiiiiiissssddisssdsssi", 
+    $runlow, $runhigh, $_GET["numevents"], $_GET["Geantver"], $rungen,
+    $savegen, $rungeant, $savegeant, $runsmear, $savesmear, 
+    $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"], $bkg, 
+    $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"], $geant_secondaries, $_GET["versionSet"], 
+    $_GET["ReactionLines"], $rcdb_query, $coherent,$_GET["Genflux"],$anaVerSet, $genpost_str,
+    $_GET["prefill"]); 
 
       //echo $sql;
     //echo "<br>";
@@ -249,9 +248,9 @@ function UpdateProject($conn)
     $msg = $msg . "Version Set:" . $VerSet . "\n";
     $msg = $msg . "halld_recon Version:" . $_GET["halld_recon_ver"] . "\n";
     $msg = $msg . "halld_sim Version:" . $_GET["halld_sim_ver"] . "\n";
-    if ( $_GET["ANAVersionSet"] != "")
+    if ( $_GET["anaverSet"] != "")
     {
-        $msg = $msg . "Analysis Launch Emulation Version:" . $_GET["ANAVersionSet"] . "\n";
+        $msg = $msg . "Analysis Launch Emulation Version:" . $_GET["anaverSet"] . "\n";
     }
     if ( $_GET["ReactionLines"] != "")
     {
@@ -301,7 +300,7 @@ function InsertProject($conn)
 
         $rcdb_query="";
 
-        if($_GET["rcdbq"] != "")
+        if( isset($_GET["rcdbq"]))
         {
             $rcdb_query=$_GET["rcdbq"];
             $rcdb_query=str_replace("&&","and",$rcdb_query);
@@ -316,55 +315,55 @@ function InsertProject($conn)
 
         $anaVerSet=NULL;
 
-        if( $_GET["ANAVersionSet"] != "" )
+        if( $_GET["anaverSet"] != "" )
         {
-            $anaVerSet=$_GET["ANAVersionSet"];
+            $anaVerSet=$_GET["anaverSet"];
         }
 
         $coherent=NULL;
 
-       if($_GET["cohPos"] != "")
+       if( isset($_GET["cohPos"]) )
         {
             $coherent=$_GET["cohPos"];
         }
 
-        if ( $_GET["GeantSecondaries"] != "")
+        if ( isset($_GET["GeantSecondaries"]) )
         {
             $geant_secondaries = 1;
         }
 
-        if ( $_GET["RunGeneration"] != "")
+        if ( isset($_GET["RunGeneration"]) )
         {
             $rungen = 1;
         }
-        if ( $_GET["SaveGeneration"] != "")
+        if ( isset($_GET["SaveGeneration"]) )
         {
             $savegen = 1;
         }
 
-        if ( $_GET["RunGeant"] != "")
+        if ( isset($_GET["RunGeant"]) )
         {
             $rungeant = 1;
         }
-        if ( $_GET["SaveGeant"] != "")
+        if ( isset($_GET["SaveGeant"]) )
         {
             $savegeant = 1;
         }
 
-        if ( $_GET["RunSmear"] != "")
+        if ( isset($_GET["RunSmear"] )
         {
             $runsmear = 1;
         }
-        if ( $_GET["SaveSmear"] != "")
+        if ( isset($_GET["SaveSmear"] )
         {
             $savesmear = 1;
         }
 
-        if ( $_GET["RunRecon"] != "")
+        if ( isset($_GET["RunRecon"]) )
         {
             $runrecon = 1;
         }
-        if ( $_GET["SaveRecon"] != "")
+        if ( isset($_GET["SaveRecon"]) )
         {
             $saverecon = 1;
         }
@@ -381,7 +380,16 @@ function InsertProject($conn)
             $runhigh = $_GET["maxRunNum"];
         }
 
-        $fullOutput = "/lustre19/expphy/cache/halld/gluex_simulations/REQUESTED_MC/" . $_GET["outputloc"] . "_" . $datetimeNOW . "/";
+        #check if outputloc begins with /lustre/
+        if ( substr($_GET["outputloc"],0,7) == "/lustre/" )
+        {
+            $fullOutput = $_GET["outputloc"];
+        }
+        else
+        {
+            $fullOutput = "/lustre19/expphy/cache/halld/gluex_simulations/REQUESTED_MC/" . $_GET["outputloc"] . "_" . $datetimeNOW . "/";
+        }
+        #$fullOutput = "/lustre19/expphy/cache/halld/gluex_simulations/REQUESTED_MC/" . $_GET["outputloc"] . "_" . $datetimeNOW . "/";
 
 
 
@@ -474,22 +482,27 @@ function InsertProject($conn)
             $newuserstmt->execute();
         }
 
+        $user_id_q="SELECT * FROM Users where name=\"" . $_SERVER['PHP_AUTH_USER'] . "\"";
+        $user_id_res = $conn->query($user_id_q);
+        $user_id_row = $user_id_res->fetch_assoc();
+        $user_id=$user_id_row["ID"];
+
         $sql = "INSERT INTO Project (Submitter, Email, Exp, Is_Dispatched, RunNumLow, RunNumHigh, "
                                  . " NumEvents, GeantVersion, OutputLocation, Submit_Time, RunGeneration, "
                                  . " SaveGeneration, RunGeant, SaveGeant, RunSmear, SaveSmear, "
                                  . " RunReconstruction, SaveReconstruction, Generator, Generator_Config, Config_Stub, "
-                                 . " BKG, Comments, GenMinE, GenMaxE,GeantSecondaries,VersionSet,UName,UIp,ReactionLines,RCDBQuery, CoherentPeak, wc,GenFlux,ANAVersionSet ,GenPostProcessing)"
+                                 . " BKG, Comments, GenMinE, GenMaxE,GeantSecondaries,VersionSet,UName,UIp,ReactionLines,RCDBQuery, CoherentPeak, wc,GenFlux,ANAVersionSet ,GenPostProcessing,user_id)"
                                  . " VALUES (?, ?,?,'0', ?, ?, "
                                  . " ?, ?, ?, now(), ?, "
                                  . " ?, ?, ?, ?, ?, "
                                  . " ?, ?, ?, ?, ?, "
-                                 . " ?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
+                                 . " ?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
         $stmt = $conn->prepare($sql);
 
-        $stmt->bind_param("sssiiiisiiiiiiiisssssddisssssddsss", $_GET["username"], $_GET["useremail"], $_GET["exp"],$runlow, $runhigh, $_GET["numevents"],
+        $stmt->bind_param("sssiiiisiiiiiiiisssssddisssssddsssi", $_GET["username"], $_GET["useremail"], $_GET["exp"],$runlow, $runhigh, $_GET["numevents"],
                   $_GET["Geantver"], $fullOutput, $rungen, $savegen, $rungeant,
                   $savegeant, $runsmear, $savesmear, $runrecon, $saverecon,
-                  $_GET["generator"], $_GET["generator_config"], $configstub, $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"],$geant_secondaries,$VerSet,$_SERVER['PHP_AUTH_USER'],$_SERVER['REMOTE_ADDR'],$RL,$rcdb_query,$coherent,$_GET["spend"],$_GET["Genflux"],$anaVerSet,$genpost_str);
+                  $_GET["generator"], $_GET["generator_config"], $configstub, $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"],$geant_secondaries,$VerSet,$_SERVER['PHP_AUTH_USER'],$_SERVER['REMOTE_ADDR'],$RL,$rcdb_query,$coherent,$_GET["spend"],$_GET["Genflux"],$anaverSet,$genpost_str,$user_id);
 
         //echo $sql;
         //echo "<br>";
@@ -518,7 +531,7 @@ function InsertProject($conn)
         //echo $row["MAX(ID)"];
 
 
-        $cmdstr='python /group/halld/www/halldwebdev/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . $row["MAX(ID)"];
+        $cmdstr='python /group/halld/www/halldweb/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . $row["MAX(ID)"];
         $command = escapeshellcmd($cmdstr);
         #echo $command;
         #echo "<br>";
@@ -541,9 +554,9 @@ function InsertProject($conn)
         $msg = $msg . "Version Set:" . $VerSet . "\n";
         $msg = $msg . "halld_recon Version:" . $_GET["halld_recon_ver"] . "\n";
         $msg = $msg . "halld_sim Version:" . $_GET["halld_sim_ver"] . "\n";
-        if ( $_GET["ANAVersionSet"] != "")
+        if ( $_GET["anaverSet"] != "")
         {
-            $msg = $msg . "Analysis Launch Emulation Version:" . $_GET["ANAVersionSet"] . "\n";
+            $msg = $msg . "Analysis Launch Emulation Version:" . $_GET["anaverSet"] . "\n";
         }
         if ( $_GET["ReactionLines"] != "")
         {

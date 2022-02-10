@@ -1,6 +1,7 @@
 <?php
 #return;
-    $files=scandir("../news/");
+    $news_loc="../news/";
+    $files=scandir($news_loc);
 
     $newsdata = array();
     foreach ($files as $file)
@@ -10,8 +11,12 @@
         {
             continue;
         }
-        $readfile=fopen("./news/" . $file,"r");
+        $readfile=fopen($news_loc . $file,"r");
 
+        if(!$readfile)
+        {
+            continue;
+        }
         $linen=0;
         $newstext="";
         while(! feof($readfile))

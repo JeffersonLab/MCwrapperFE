@@ -14,7 +14,7 @@ else if( $_GET["sim_ver"] == "unknown")
 {
     $sql="SELECT DISTINCT version from version where packageID in (SELECT id from package where name=\"halld_sim\") && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_recon\") && version=\"" . $_GET["recon_ver"] . "\") && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) ORDER BY version desc;";
 }
-else if( !$_GET["verSet"] )
+else if( !isset($_GET["verSet"]) )
 {
 
     if( $_GET["sim_ver"] == "master" && $_GET["recon_ver"] == "master")
@@ -42,7 +42,7 @@ $result = $conn_vs->query($sql);
 
 $data = array();
 
-if( $_GET["verSet"] )
+if( isset($_GET["verSet"]) )
 {
     $none["version"]="None";
     $data[]=$none;
