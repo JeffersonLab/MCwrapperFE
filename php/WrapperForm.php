@@ -72,11 +72,11 @@ function UpdateProject($conn)
             $savegeant = 1;
         }
 
-        if ( isset($_GET["RunSmear"] )
+        if ( isset($_GET["RunSmear"] ) )
         {
             $runsmear = 1;
         }
-        if ( isset($_GET["SaveSmear"] )
+        if ( isset($_GET["SaveSmear"] ) )
         {
             $savesmear = 1;
         }
@@ -350,11 +350,11 @@ function InsertProject($conn)
             $savegeant = 1;
         }
 
-        if ( isset($_GET["RunSmear"] )
+        if ( isset($_GET["RunSmear"] ) )
         {
             $runsmear = 1;
         }
-        if ( isset($_GET["SaveSmear"] )
+        if ( isset($_GET["SaveSmear"] ) )
         {
             $savesmear = 1;
         }
