@@ -374,7 +374,8 @@ function InsertProject($conn)
         $addrange="";
         $runlow = $_GET["runnumber"];
         $runhigh = $runlow;
-        if ( $_GET["maxRunNum"] != "" )
+
+        if ( isset($_GET["maxRunNum"]) )
         {
             $addrange=" to " . $_GET["maxRunNum"];
             $runhigh = $_GET["maxRunNum"];
@@ -454,7 +455,8 @@ function InsertProject($conn)
             $bkg = $bkg . ":/" . $_GET["randomtag"];
         }
 
-        if ( $_GET["randomtag"] != "" && $_GET["bkg"] != "loc" )
+        
+        if ( isset($_GET["randomtag"]) && $_GET["bkg"] != "loc" )
         {
             $bkg = $bkg . ":" . $_GET["randomtag"];
         }
@@ -491,23 +493,29 @@ function InsertProject($conn)
                                  . " NumEvents, GeantVersion, OutputLocation, Submit_Time, RunGeneration, "
                                  . " SaveGeneration, RunGeant, SaveGeant, RunSmear, SaveSmear, "
                                  . " RunReconstruction, SaveReconstruction, Generator, Generator_Config, Config_Stub, "
-                                 . " BKG, Comments, GenMinE, GenMaxE,GeantSecondaries,VersionSet,UName,UIp,ReactionLines,RCDBQuery, CoherentPeak, wc,GenFlux,ANAVersionSet ,GenPostProcessing,user_id)"
+                                 . " BKG, Comments, GenMinE, GenMaxE,GeantSecondaries, "
+                                 . " VersionSet,UName,UIp,ReactionLines,RCDBQuery, "
+                                 . " CoherentPeak, wc,GenFlux,ANAVersionSet ,GenPostProcessing,user_id)"
                                  . " VALUES (?, ?,?,'0', ?, ?, "
                                  . " ?, ?, ?, now(), ?, "
                                  . " ?, ?, ?, ?, ?, "
                                  . " ?, ?, ?, ?, ?, "
-                                 . " ?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ";
+                                 . " ?, ?,?,?,?,"
+                                 . " ?,?,?,?,?,"
+                                 . " ?,?,?,?,?,?)";
         $stmt = $conn->prepare($sql);
-
+        //sssiii
+        //iis
         $stmt->bind_param("sssiiiisiiiiiiiisssssddisssssddsssi", $_GET["username"], $_GET["useremail"], $_GET["exp"],$runlow, $runhigh, $_GET["numevents"],
                   $_GET["Geantver"], $fullOutput, $rungen, $savegen, $rungeant,
                   $savegeant, $runsmear, $savesmear, $runrecon, $saverecon,
-                  $_GET["generator"], $_GET["generator_config"], $configstub, $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"],$geant_secondaries,$VerSet,$_SERVER['PHP_AUTH_USER'],$_SERVER['REMOTE_ADDR'],$RL,$rcdb_query,$coherent,$_GET["spend"],$_GET["Genflux"],$anaverSet,$genpost_str,$user_id);
+                  $_GET["generator"], $_GET["generator_config"], $configstub, $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"],$geant_secondaries,$VerSet,$_SERVER['PHP_AUTH_USER'],$_SERVER['REMOTE_ADDR'],$RL,$rcdb_query,$coherent,$_GET["spend"],$_GET["Genflux"],$anaVerSet,$genpost_str,$user_id);
 
         //echo $sql;
         //echo "<br>";
         if ($stmt->execute() === TRUE) {
-        //echo "New record created successfully";
+        echo "New record created successfully <br>";
+        echo $anaVerSet;
         } else {
 
             echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
@@ -599,7 +607,7 @@ if ($conn->connect_error) {
 #echo "356";
 if( $_GET["mod"] == 0 || $_GET["prefill"] == -1 || $_GET["mod"] == 2)
 {
-    echo "here";
+    //echo "here";
     header('Location: http://' . $_SERVER['HTTP_HOST'] . '/gluex_sim/thanks.html', true, 303);
     InsertProject($conn);
 }
@@ -622,7 +630,8 @@ else
     {
         header('Location: http://' . $_SERVER['HTTP_HOST'] . '/gluex_sim/no_update.html', true, 303);
         echo "You are not autorized to update the form as you are not the owner or the project has already been launched";
+        $conn->close();
     }
 }
-$conn->close();
+
 ?>

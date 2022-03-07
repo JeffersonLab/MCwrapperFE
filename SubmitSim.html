@@ -2219,7 +2219,7 @@ function populateGenerators(exp)
     else
     {
         defgen="bggen"
-        Gens = ["genr8","bggen","genEtaRegge","gen_2pi_primakoff","gen_pi0","bggen_jpsi","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_amp","gen_omegapi","mc_gen","geantBEAM"]//,"file:"]
+        Gens = ["genr8","bggen","genEtaRegge","gen_2pi_primakoff","gen_pi0","bggen_jpsi","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_amp","gen_omegapi","mc_gen","geantBEAM","gen_vec_ps"]//,"file:"]
         //Gens = ["genr8","bggen","genEtaRegge","gen_2pi_amp","gen_2pi_primakoff","gen_pi0","gen_omega_3pi","gen_2k","bggen_jpsi","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_omega_radiative","gen_amp","file:"]
     }
 
@@ -2267,7 +2267,7 @@ function addANAselector()
     {
         var anaverselect=document.createElement("SELECT");
         anaverselect.id="anaverSet";
-        anaverselect.name="ANAVersionSet"
+        anaverselect.name="anaverSet"
         anaverselect.setAttribute("onchange","updatePreview();MakeCheckButton();");
         //verselect.onchange="updatePreview();MakeCheckButton()"
         //form.appendChild(anaverselect)
@@ -2382,7 +2382,7 @@ function updateBKGoptions()
             document.getElementById("randomtag").replaceWith(randomtag)
 
             document.getElementById("randomtag").style.width="38%"
-            randtags=["recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
+            randtags=["recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01","recon-2019_11-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
 
             randtags.forEach(function(element) {
                 halld_reconVer=document.getElementById("recon_stack")
