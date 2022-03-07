@@ -123,9 +123,9 @@ function UpdateProject($conn)
 
     $bkg = $_GET["bkg"];
 
-    if ( $_GET["bkg"] == "loc" )
+    if ( str_contains($_GET["bkg"],"loc" )
     {
-        $bkg = $bkg . ":/" . $_GET["randomtag"];
+        $bkg = "loc:/" . $_GET["randomtag"];
     }
 
     if ( $_GET["randomtag"] != "" && $_GET["bkg"] != "loc" )
@@ -450,9 +450,9 @@ function InsertProject($conn)
 
         $bkg = $_GET["bkg"];
 
-        if ( $_GET["bkg"] == "loc" )
+        if ( str_contains($_GET["bkg"],"loc" )
         {
-            $bkg = $bkg . ":/" . $_GET["randomtag"];
+            $bkg = "loc:/" . $_GET["randomtag"];
         }
 
         
