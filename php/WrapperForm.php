@@ -123,7 +123,7 @@ function UpdateProject($conn)
 
     $bkg = $_GET["bkg"];
 
-    if ( str_contains($_GET["bkg"],"loc" )
+    if ( $_GET["bkg"] == "Random loc:")
     {
         $bkg = "loc:/" . $_GET["randomtag"];
     }
@@ -135,6 +135,7 @@ function UpdateProject($conn)
 
     $RL = $_GET["ReactionLines"];
 
+    
     if ( $_GET["ANAStyle"] == "JanaConfig" )
     {
         $RL = "file:" . $_GET["ReactionLines"];
@@ -206,7 +207,7 @@ function UpdateProject($conn)
     $savegen, $rungeant, $savegeant, $runsmear, $savesmear, 
     $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"], $bkg, 
     $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"], $geant_secondaries, $_GET["versionSet"], 
-    $_GET["ReactionLines"], $rcdb_query, $coherent,$_GET["Genflux"],$anaVerSet, $genpost_str,
+    $RL, $rcdb_query, $coherent,$_GET["Genflux"],$anaVerSet, $genpost_str,
     $_GET["prefill"]); 
 
       //echo $sql;
@@ -450,7 +451,7 @@ function InsertProject($conn)
 
         $bkg = $_GET["bkg"];
 
-        if ( str_contains($_GET["bkg"],"loc" )
+        if ( $_GET["bkg"] == "Random loc:")
         {
             $bkg = "loc:/" . $_GET["randomtag"];
         }
@@ -463,10 +464,14 @@ function InsertProject($conn)
 
         $RL = $_GET["ReactionLines"];
 
+        #echo "here <br>";
+        #echo $RL . "<br>";
+        #echo $_GET["ANAStyle"] . "<br>";
         if ( $_GET["ANAStyle"] == "JanaConfig" )
         {
             $RL = "file:" . $_GET["ReactionLines"];
         }
+        #echo $RL . "<br>";
         #$configstub = $configstub . "BKG=" . $bkg . "\n";
 
         #$msg = $msg . $configstub;
@@ -514,6 +519,7 @@ function InsertProject($conn)
         //echo $sql;
         //echo "<br>";
         if ($stmt->execute() === TRUE) {
+        //if (1){
         echo "New record created successfully <br>";
         echo $anaVerSet;
         } else {
@@ -624,11 +630,11 @@ else
 
         UpdateProject($conn);
 
-        header('Location: http://' . $_SERVER['HTTP_HOST'] . '/gluex_sim/thanks_update.html', true, 303);
+        #header('Location: http://' . $_SERVER['HTTP_HOST'] . '/gluex_sim/thanks_update.html', true, 303);
     }
     else
     {
-        header('Location: http://' . $_SERVER['HTTP_HOST'] . '/gluex_sim/no_update.html', true, 303);
+        #header('Location: http://' . $_SERVER['HTTP_HOST'] . '/gluex_sim/no_update.html', true, 303);
         echo "You are not autorized to update the form as you are not the owner or the project has already been launched";
         $conn->close();
     }
