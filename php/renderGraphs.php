@@ -1,5 +1,5 @@
 <?php
-$token="eyJrIjoidEl5b2xMRzEzTXdDdzJtbzRQMTBOVzBUckV6SHhLMmYiLCJuIjoibWN3cmFwcGVyIiwiaWQiOjF9";
+$token="";
 
 $lookback=4;#hours
 $now = round(microtime(true) * 1000);
