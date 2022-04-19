@@ -448,10 +448,15 @@ function LoopAndFill(result)
         document.getElementById("randomtag").value=bkgarr[1];
     }
 
-    if(result.ReactionLines.includes("file:"))
+    if(result.ReactionLines.includes("file:") )
     {
     MakeSelectedByValue(document.getElementById("ANAStyle"),"JanaConfig")
     updateANA(result.ReactionLines.replace("file:",""));
+    DoANASetQuery()
+    if(result.ANAVersionSet != null)
+    {
+        MakeSelectedByValue(document.getElementById("anaverSet"),result.ANAVersionSet)
+    }
 
     }
     else{

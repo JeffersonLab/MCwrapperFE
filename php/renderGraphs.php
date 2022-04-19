@@ -1,5 +1,6 @@
 <?php
-$token="";
+require_once "graph_token.php";
+
 
 $lookback=4;#hours
 $now = round(microtime(true) * 1000);
