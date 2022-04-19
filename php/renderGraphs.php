@@ -1,5 +1,5 @@
 <?php
-require_once "graph_token.php";
+require_once "./graph_token.php";
 
 
 $lookback=4;#hours
