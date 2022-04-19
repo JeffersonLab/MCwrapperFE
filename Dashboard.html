@@ -23,7 +23,7 @@
     var ProjInterval;
     var JobsInterval;
     var AttemptsInterval;
-var result=[];
+    var result=[];
         var ipTable= [];
         var subIPs=[];
         var runIPs=[];
@@ -49,15 +49,64 @@ var result=[];
 
         var MakeProjectTable_lock=true;
         var news_lock=false;
+        var renderGraphs_lock=false;
     
-    
-        setInterval(function (){
-            newsource="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"+Date.now()
+        function renderGraphs_php()
+        {
+
+            if(renderGraphs_lock)
+            {
+                return;
+            }
+
+            if (window.XMLHttpRequest) {
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            } else {
+            // code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                //console.log(this.responseText)
+                if(this.responseText != "")
+                {
+                    console.log(this.responseText)
+                    //responseText=this.responseText.substring(29,this.responseText.length)
+                    graphs=JSON.parse(this.responseText);
+                    
+                    document.getElementById('condor_running').src=graphs[0];
+                    document.getElementById('condor_idle').src=graphs[1]
+                    //console.log("HB TABLE");
+                    //console.log(hist_table)
+
+                }
+                renderGraphs_lock=false;
+                
+            }
+        };
+        
+        renderGraphs_lock=true
+        xmlhttp.open("GET","./php/renderGraphs.php",true);
+        xmlhttp.send();
+  
+        }
+        function renderGraphs(){
+            var lookback=4 //hours
+            //get now in number of miliseconds
+            var now = Math.floor(Date.now());
+            //4 hours in miliseconds
+            
+            var then =now-lookback*60*60*1000;
+            newsource="https://scigraf.jlab.org/render/d-solo/_XK5tYPWk/condor-general-view?orgId=1&from="+then+"&to="+now+"&theme=light&panelId=9&width=1000&height=500&tz=America%2FNew_York"//+Date.now()
+            //old=https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"
             //newsource="http://sci-prometheus.jlab.org:3000/d/_XK5tYPWk/condor-general-view?orgId=1&from=now-1h&to=now"
             document.getElementById('condor_running').src=newsource
-            newsource_idle="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs?"+Date.now()
+            newsource_idle="https://scigraf.jlab.org/render/d-solo/_XK5tYPWk/condor-general-view?orgId=1&from="+then+"&to="+now+"&theme=light&panelId=10&width=1000&height=500&tz=America%2FNew_York"//+Date.now()
             document.getElementById('condor_idle').src=newsource_idle
-        },10000)
+
+        }
+        setInterval(renderGraphs_php,10000)
         
         setInterval(function(){
             if(!news_lock)
@@ -72,7 +121,7 @@ var result=[];
             GetHeartbeats();
         },5000)
         
-        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();}); 
+        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php()}); 
 
     document.addEventListener("mousemove",function (e){locX=e.clientX;locY=e.clientY;})
 
@@ -1309,9 +1358,9 @@ function GetNews()
             </div>
             <div id="graphs">
             
-            <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs" id="condor_running"/>
+            <img class="graph" src="" id="condor_running"/>
             
-            <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs" id="condor_idle"/>
+            <img class="graph" src="" id="condor_idle"/>
             
             </div>
 
@@ -1384,7 +1433,7 @@ function GetNews()
       <button onclick="DoMenu('MC.config')"><font color="black">Get MC.config File</font></button>
       <button onclick="DoMenu('NotifyComplete')"><font color="black">Notify Complete</font></button>
       <button onclick="DoMenu('ReTest')"><font color="black">Retest Project</font></button>
-      <button onclick="DoMenu('Recall')"><font color="black">Recall Project</font></button>
+      <button onclick="DoMenu('Recall')"><font color="black">Suspend Project</font></button>
       <button onclick="DoMenu('DeclareComplete')"><font color="black">Declare Project Complete</font></button>
     </div>
     <hr/>

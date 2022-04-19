@@ -41,14 +41,50 @@ var result=[];
         var foreman=false;
         var locX,locY;
         var news_lock=false;
+        var renderGraphs_lock=false;
     
+        function renderGraphs_php()
+        {
+
+            if(renderGraphs_lock)
+            {
+                return;
+            }
+
+            if (window.XMLHttpRequest) {
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            } else {
+            // code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                //console.log(this.responseText)
+                if(this.responseText != "")
+                {
+                    console.log(this.responseText)
+                    //responseText=this.responseText.substring(29,this.responseText.length)
+                    graphs=JSON.parse(this.responseText);
+                    
+                    document.getElementById('condor_running').src=graphs[0];
+                    document.getElementById('condor_idle').src=graphs[1]
+                    //console.log("HB TABLE");
+                    //console.log(hist_table)
+
+                }
+                renderGraphs_lock=false;
+                
+            }
+        };
+        
+        renderGraphs_lock=true
+        xmlhttp.open("GET","./php/renderGraphs.php",true);
+        xmlhttp.send();
+  
+        }
     
-        setInterval(function (){
-            newsource="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs?"+Date.now()
-            document.getElementById('condor_running').src=newsource
-            newsource_idle="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs?"+Date.now()
-            document.getElementById('condor_idle').src=newsource_idle
-        },5000)
+        setInterval(renderGraphs_php(),10000)
 
         setInterval(function(){
             if(!news_lock)
@@ -59,7 +95,7 @@ var result=[];
             
         },5000)
 
-        $(document).ready(function(){GetNews();QueryDatabase();}); 
+        $(document).ready(function(){GetNews();QueryDatabase();renderGraphs_php()}); 
 
 
 
@@ -1143,9 +1179,9 @@ function disposeHierarchy (node, callback)
                     </div>
                     <div id="graphs">
                     
-                    <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=102&m=TotalRunningJobs&vl=jobs" id="condor_running"/>
+                    <img class="graph" src="" id="condor_running"/>
                     
-                    <img class="graph" src="https://scicomp.jlab.org/ganglia/graph.php?r=hour&z=xlarge&c=Scicomp+Misc&h=scosg20.jlab.org&jr=&js=&v=0&m=TotalIdleJobs&vl=jobs" id="condor_idle"/>
+                    <img class="graph" src="" id="condor_idle"/>
                     
                     </div>
         

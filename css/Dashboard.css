@@ -552,7 +552,7 @@ hr { width: 85%;
     animation-duration: 2s;
     animation-iteration-count: 1;
     animation-fill-mode:both;
-    animation-delay:1s;
+    animation-delay:5s;
 }
 }
 @media only screen and (max-width:1515px)

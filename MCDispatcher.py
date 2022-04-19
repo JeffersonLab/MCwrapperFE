@@ -406,7 +406,7 @@ def CancelJob(ID):
 
 def CheckGenConfig(order):
     ID=order["ID"]
-    print("checking/getting the generator config for project:",str(ID))
+    #print("checking/getting the generator config for project:",str(ID))
     fileSTR=order["Generator_Config"].lstrip()
     file_split=fileSTR.split("/")
     name=file_split[len(file_split)-1]
@@ -434,7 +434,7 @@ def CheckGenConfig(order):
         order["Generator_Config"]=copyTo+str(ID)+"_"+name #copyTo+name
         return copyTo+str(ID)+"_"+name
     elif os.path.isfile(fileSTR)==False and (socket.gethostname() != "scosg16.jlab.org" or socket.gethostname() != "scosg20.jlab.org"):
-        print("File not found and not on submit node ")
+        #print("File not found and not on submit node ")
         return copyTo+str(ID)+"_"+name
 
     return "True"
@@ -987,7 +987,7 @@ def WriteConfig(ID):
     query = "SELECT * FROM Project WHERE ID="+str(ID)
     curs.execute(query) 
     rows=curs.fetchall()
-    print(rows)
+    #print(rows)
     newLoc=CheckGenConfig(rows[0])
     WritePayloadConfigString(rows[0],newLoc)
     #status = subprocess.call("cp "+MCWRAPPER_BOT_HOME+"/examples/SWIFShell.config ./MCDispatched_"+str(ID)+".config", shell=True)
@@ -1361,7 +1361,7 @@ def main(argv):
             if argu == "-rlim":
                 RUNNING_LIMIT_OVERRIDE=True
 
-    print("num running", int(numprocesses_running))
+    #print("num running", int(numprocesses_running))
     if(int(numprocesses_running) <2 or RUNNING_LIMIT_OVERRIDE ):
        
 
