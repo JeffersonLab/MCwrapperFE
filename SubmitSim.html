@@ -61,15 +61,20 @@
             <input type="hidden" value=1 id="wall" name="wall">
             <div id="expSelector" class="switch-field">
                     <div class="switch-title">Experiment</div>
-                    <input type="radio" id="GlueX" name="exp" value="GlueX" onclick="ChangeLogo('GlueX');MakeGluexForm();MakeCheckButton();alphabetizeslector()" checked/>
+                    <input type="radio" id="GlueX" name="exp" value="GlueX" onclick="ChangeLogo('GlueX');MakeGlueXBeamTimeSelector();MakeCheckButton();alphabetizeslector()" checked/>
                     <label for="GlueX">GlueX</label>
-                    <input type="radio" id="CPP" name="exp" value="CPP" onclick="ChangeLogo('CPP');MakeCPPForm();MakeCheckButton();alphabetizeslector()" />
+                    <input type="radio" id="CPP" name="exp" value="CPP" onclick="ChangeLogo('CPP');MakeCPPBeamTimeSelector();MakeCPPForm();MakeCheckButton();alphabetizeslector()" />
                     <label for="CPP">CPP</label>
-                    <input type="radio" id="JEF" name="exp" value="JEF" onclick="ChangeLogo('JEF');MakeJEFForm();MakeCheckButton();alphabetizeslector()" />
+                    <input type="radio" id="JEF" name="exp" value="JEF" onclick="ChangeLogo('JEF');MakeJEFBeamTimeSelector();MakeJEFForm();MakeCheckButton();alphabetizeslector()" />
                     <label for="JEF">JEF</label>
                     <!--<input type="radio" id="switch_3_right" name="switch_3" value="no" />
                     <label for="switch_3_right">Three</label>-->
             </div>
+            <div id="beamtimeSelector" style="width:100%;">
+
+            </div>
+            <br>
+            <br>
             <div id="personal">
 
 
@@ -280,19 +285,21 @@ function prefillForm()
                 if(result.Exp=="GlueX" || result.Exp == "gluex")
                 {
                     document.getElementById("GlueX").checked=true;
-                    MakeGluexForm();
+                    MakeGlueXBeamTimeSelector();
                     ChangeLogo("GlueX")
 
                 }
                 else if( result.Exp=="CPP")
                 {
                     document.getElementById("CPP").checked=true;
+                    MakeCPPBeamTimeSelector()
                     MakeCPPForm()
                     ChangeLogo("CPP")
                 }
                 else if( result.Exp=="JEF")
                 {
                     document.getElementById("JEF").checked=true;
+                    MakeJEFBeamTimeSelector()
                     MakeJEFForm()
                     ChangeLogo("JEF")
                 }
@@ -607,7 +614,7 @@ function Initialize()
     }
     else
     {
-      MakeGluexForm();MakeCheckButton();alphabetizeslector()
+      MakeGlueXBeamTimeSelector();MakeCheckButton();alphabetizeslector()
     }
     getBalance();
 }
@@ -679,6 +686,88 @@ function ChangeLogo(newlogo)
         document.getElementById("explogo").style.className="run-fadeIn";
     }
 
+}
+function MakeGlueXBeamTimeSelector()
+{
+    var form=document.getElementById("beamtimeSelector");
+    form.innerHTML=""
+    form.setAttribute("class","switch-field")
+
+    var selLabel=document.createElement("div")
+    selLabel.setAttribute("class","switch-title")
+    selLabel.appendChild(document.createTextNode("Beam time"))
+    form.appendChild(selLabel)
+
+    
+    var in201701 = document.createElement("input")
+    in201701.setAttribute("type","radio")
+    in201701.setAttribute("id","in201701")
+    in201701.setAttribute("name","btsel")
+    in201701.setAttribute("value","2017-01")
+    in201701.setAttribute("onclick","")
+    in201701.setAttribute("checked","")
+    form.appendChild(in201701)
+    var label201701=document.createElement("LABEL");
+    label201701.setAttribute("for", "in201701");
+    label201701.appendChild(document.createTextNode("2017-01"))
+    form.appendChild(label201701)
+    var in201801 = document.createElement("input")
+    in201801.setAttribute("type","radio")
+    in201801.setAttribute("id","in201801")
+    in201801.setAttribute("name","btsel")
+    in201801.setAttribute("value","2018-01")
+    in201801.setAttribute("onclick","")
+    form.appendChild(in201801)
+    var label201801=document.createElement("LABEL");
+    label201801.setAttribute("for", "in201801");
+    label201801.appendChild(document.createTextNode("2018-01"))
+    form.appendChild(label201801)
+    var in201808 = document.createElement("input")
+    in201808.setAttribute("type","radio")
+    in201808.setAttribute("id","in201808")
+    in201808.setAttribute("name","btsel")
+    in201808.setAttribute("value","2018-08")
+    in201808.setAttribute("onclick","")
+    form.appendChild(in201808)
+    var label201808=document.createElement("LABEL");
+    label201808.setAttribute("for", "in201808");
+    label201808.appendChild(document.createTextNode("2018-08"))
+    form.appendChild(label201808)
+    var in201911 = document.createElement("input")
+    in201911.setAttribute("type","radio")
+    in201911.setAttribute("id","in201911")
+    in201911.setAttribute("name","btsel")
+    in201911.setAttribute("value","2019-11")
+    in201911.setAttribute("onclick","")
+    form.appendChild(in201911)
+    var label201911=document.createElement("LABEL");
+    label201911.setAttribute("for", "in201911");
+    label201911.appendChild(document.createTextNode("2019-11"))
+    form.appendChild(label201911)
+    var inCustom = document.createElement("input")
+    inCustom.setAttribute("type","radio")
+    inCustom.setAttribute("id","inCustom")
+    inCustom.setAttribute("name","btsel")
+    inCustom.setAttribute("value","2019-11")
+    inCustom.setAttribute("onclick","")
+    form.appendChild(inCustom)
+    var labelCustom=document.createElement("LABEL");
+    labelCustom.setAttribute("for", "inCustom");
+    labelCustom.appendChild(document.createTextNode("custom"))
+    form.appendChild(labelCustom)
+
+    MakeGluexForm();
+
+}
+function MakeCPPBeamTimeSelector()
+{
+    var form=document.getElementById("beamtimeSelector");
+    form.innerHTML=""
+}
+function MakeJEFBeamTimeSelector()
+{
+    var form=document.getElementById("beamtimeSelector");
+    form.innerHTML=""
 }
 function MakeGluexForm()
 {
