@@ -881,7 +881,7 @@ function FillDefaults(beamtime){
     xmlhttp.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown");
     xmlhttp.send();
 
-    
+
     //RUNRANGES
     var range = document.getElementById("numOrRange")
     if(beamtime=="custom")
@@ -1356,6 +1356,20 @@ function MakeGluexForm()
     form.appendChild(bkgselect)
 
     populateBackgrounds("GlueX");
+
+    form.appendChild(document.createElement("BR"))
+    var notaglabel=document.createElement("LABEL");
+    notaglabel.setAttribute("for", "NoTag");
+    notaglabel.appendChild(document.createTextNode("No tagger accidentals:"))
+    form.appendChild(notaglabel)
+    var rnotag=document.createElement("INPUT");
+    rnotag.type="checkbox"
+    rnotag.id="NoTag"
+    rnotag.name="NoTag"
+    rnotag.value="NoTag"
+    rnotag.checked=false;
+    form.appendChild(rnotag);
+
 
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))

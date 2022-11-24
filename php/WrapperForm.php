@@ -462,6 +462,11 @@ function InsertProject($conn)
             $bkg = $bkg . ":" . $_GET["randomtag"];
         }
 
+        if ( isset($_GET["NoTag"] ) )
+        {
+            $bkg = $bkg . "+NoTag";
+        }
+
         $RL = $_GET["ReactionLines"];
 
         #echo "here <br>";
