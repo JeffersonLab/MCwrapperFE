@@ -702,23 +702,34 @@ function MakeGlueXBeamTimeSelector()
     form.appendChild(selLabel)
 
     
-    var in201701 = document.createElement("input")
-    in201701.setAttribute("type","radio")
-    in201701.setAttribute("id","in201701")
-    in201701.setAttribute("name","btsel")
-    in201701.setAttribute("value","2017-01")
-    in201701.setAttribute("onclick","FillDefaults('2017-01');")
-    form.appendChild(in201701)
-    var label201701=document.createElement("LABEL");
-    label201701.setAttribute("for", "in201701");
-    label201701.appendChild(document.createTextNode("2017-01"))
-    form.appendChild(label201701)
+    var in20170103 = document.createElement("input")
+    in20170103.setAttribute("type","radio")
+    in20170103.setAttribute("id","in20170103")
+    in20170103.setAttribute("name","btsel")
+    in20170103.setAttribute("value","2017_01-ver03")
+    in20170103.setAttribute("onclick","FillDefaults('2017_01-ver03');")
+    form.appendChild(in20170103)
+    var label20170103=document.createElement("LABEL");
+    label20170103.setAttribute("for", "in20170103");
+    label20170103.appendChild(document.createTextNode("2017-01 (ver03)"))
+    form.appendChild(label20170103)
+    var in20170104 = document.createElement("input")
+    in20170104.setAttribute("type","radio")
+    in20170104.setAttribute("id","in20170104")
+    in20170104.setAttribute("name","btsel")
+    in20170104.setAttribute("value","2017_01-ver04")
+    in20170104.setAttribute("onclick","FillDefaults('2017_01-ver04');")
+    form.appendChild(in20170104)
+    var label20170104=document.createElement("LABEL");
+    label20170104.setAttribute("for", "in20170104");
+    label20170104.appendChild(document.createTextNode("2017-01 (ver04)"))
+    form.appendChild(label20170104)
     var in201801 = document.createElement("input")
     in201801.setAttribute("type","radio")
     in201801.setAttribute("id","in201801")
     in201801.setAttribute("name","btsel")
-    in201801.setAttribute("value","2018-01")
-    in201801.setAttribute("onclick","FillDefaults('2018-01');")
+    in201801.setAttribute("value","2018_01")
+    in201801.setAttribute("onclick","FillDefaults('2018_01-ver02');")
     form.appendChild(in201801)
     var label201801=document.createElement("LABEL");
     label201801.setAttribute("for", "in201801");
@@ -728,8 +739,8 @@ function MakeGlueXBeamTimeSelector()
     in201808.setAttribute("type","radio")
     in201808.setAttribute("id","in201808")
     in201808.setAttribute("name","btsel")
-    in201808.setAttribute("value","2018-08")
-    in201808.setAttribute("onclick","FillDefaults('2018-08');")
+    in201808.setAttribute("value","2018_08")
+    in201808.setAttribute("onclick","FillDefaults('2018_08-ver02');")
     form.appendChild(in201808)
     var label201808=document.createElement("LABEL");
     label201808.setAttribute("for", "in201808");
@@ -739,7 +750,7 @@ function MakeGlueXBeamTimeSelector()
     in201808lowE.setAttribute("type","radio")
     in201808lowE.setAttribute("id","in201808lowE")
     in201808lowE.setAttribute("name","btsel")
-    in201808lowE.setAttribute("value","2018-08")
+    in201808lowE.setAttribute("value","2018_08")
     in201808lowE.setAttribute("onclick","FillDefaults('lowE');")
     form.appendChild(in201808lowE)
     var label201808lowE=document.createElement("LABEL");
@@ -750,8 +761,8 @@ function MakeGlueXBeamTimeSelector()
     in201911.setAttribute("type","radio")
     in201911.setAttribute("id","in201911")
     in201911.setAttribute("name","btsel")
-    in201911.setAttribute("value","2019-11")
-    in201911.setAttribute("onclick","FillDefaults('2019-11');")
+    in201911.setAttribute("value","2019_11")
+    in201911.setAttribute("onclick","FillDefaults('2019_11-ver01');")
     form.appendChild(in201911)
     var label201911=document.createElement("LABEL");
     label201911.setAttribute("for", "in201911");
@@ -761,7 +772,7 @@ function MakeGlueXBeamTimeSelector()
     inCustom.setAttribute("type","radio")
     inCustom.setAttribute("id","inCustom")
     inCustom.setAttribute("name","btsel")
-    inCustom.setAttribute("value","2019-11")
+    inCustom.setAttribute("value","custom")
     inCustom.setAttribute("onclick","FillDefaults('custom');")
     form.appendChild(inCustom)
     var labelCustom=document.createElement("LABEL");
@@ -771,12 +782,112 @@ function MakeGlueXBeamTimeSelector()
 }
 function FillDefaults(beamtime){
     
+    //VERSION SETS (Pick the first that fits the beam time. It will be the most recent.)
+    var reconver = document.getElementById("recon_stack")
+    for(var i = 0; i < reconver.length; i++){
+        if(reconver[i].value.startsWith("recon-"+beamtime)){
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if(beamtime=="2017_01-ver04" && reconver[i].value.startsWith("recon-2019_11-ver01")){ //special case since 2017_01-ver04 is same reco as 2019_11-ver01
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if (beamtime=="lowE" && reconver[i].value.startsWith("recon-2018_08")){
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if (beamtime=="custom"){
+            MakeSelectedByValue(reconver,reconver[0].value)
+            break
+        }
+    }
+
+    //DoSimQuery()
+    // need to do it here since we need to wait for XMLHttpRequest to respond
+    // before we can set the version set "by hand", couldn't do it with a function call
+    var selRecon = reconver.options[reconver.selectedIndex].value;
+    if (window.XMLHttpRequest) {
+        // code for IE7+, Firefox, Chrome, Opera, Safari
+        xmlhttp = new XMLHttpRequest();
+    } else {
+        // code for IE6, IE5
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            result=JSON.parse(this.responseText);
+            console.log(result)
+            PopulateVer("sim_ver",result)
+            if(document.getElementById("prefill").value != "-1" )
+            {
+            MakeSelectedByValue(document.getElementById("sim_ver"),project.sim_ver)
+            }
+
+            // DoSetQuery()
+            var sims = document.getElementById("sim_ver");
+            var selSim = sims.options[sims.selectedIndex].value;
+            if (window.XMLHttpRequest) {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp2 = new XMLHttpRequest();
+            } else {
+                // code for IE6, IE5
+                xmlhttp2 = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp2.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+
+                    result2=JSON.parse(this.responseText);
+
+                    console.log(result2)
+                    PopulateVer("verSet",result2)
+                    if(document.getElementById("prefill").value != "-1" )
+                    {
+
+                    MakeSelectedByValue(document.getElementById("verSet"),project.VersionSet)
+                    }
+                    //special case since 2017_01-ver04 is same reco as 2019_11-ver01 but has different version set
+                    //can easily be generalised if more such cases arise
+                    if(beamtime=="2017_01-ver04"){
+                        var verset = document.getElementById("verSet")
+                        for(var i = 0; i < verset.length; i++){
+                            if(verset[i].value.startsWith("recon-2017_01-ver04")){
+                                MakeSelectedByValue(verset,verset[i].value)
+                                break
+                            }
+                        }
+                    }
+                    updatePreview();
+                    if(document.getElementById("ReactionLines").value != "" && document.getElementById("prefill").value != "-1" && !document.getElementById("anaverSet"))
+                    {
+                    addANAselector()
+                    }
+                    else if(document.getElementById("anaverSet"))
+                    {
+                        DoANASetQuery();
+                    }
+                }
+
+            }
+            query_to_do="SELECT DISTINCT"
+            console.log("./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver="+selSim)
+            xmlhttp2.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver="+selSim);
+            xmlhttp2.send();
+            }
+
+        }
+    query_to_do="SELECT DISTINCT"
+    console.log("./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown")
+    xmlhttp.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown");
+    xmlhttp.send();
+
+    
     //RUNRANGES
     var range = document.getElementById("numOrRange")
     if(beamtime=="custom")
     {
         if(range.value=="Range"){
-            range.value="Number"
+            MakeSelectedByValue(range,"Number")
             updateRangeoptions()
         }
         var runmin = document.getElementById("runnum")
@@ -784,22 +895,24 @@ function FillDefaults(beamtime){
     }
     else {
         if(range.value=="Number"){
-            range.value="Range"
+            MakeSelectedByValue(range,"Range")
             updateRangeoptions()
         }
         var runmin = document.getElementById("runnum")
         var runmax = document.getElementById("maxRunNum")
-        beamtime == "2017-01" ? runmin.value=30274
-        : beamtime == "2018-01" ? runmin.value=40856
-        : beamtime == "2018-08" ? runmin.value=50677
+        beamtime == "2017_01-ver03" ? runmin.value=30274
+        : beamtime == "2017_01-ver04" ? runmin.value=30274
+        : beamtime == "2018_01-ver02" ? runmin.value=40856
+        : beamtime == "2018_08-ver02" ? runmin.value=50677
         : beamtime == "lowE" ? runmin.value=51384
-        : beamtime == "2019-11" ? runmin.value=71350
+        : beamtime == "2019_11-ver01" ? runmin.value=71350
         : runmin.value=""
-        beamtime == "2017-01" ? runmax.value=31057
-        : beamtime == "2018-01" ? runmax.value=42577
-        : beamtime == "2018-08" ? runmax.value=51768
+        beamtime == "2017_01-ver03" ? runmax.value=31057
+        : beamtime == "2017_01-ver04" ? runmax.value=31057
+        : beamtime == "2018_01-ver02" ? runmax.value=42577
+        : beamtime == "2018_08-ver02" ? runmax.value=51768
         : beamtime == "lowE" ? runmax.value=51457
-        : beamtime == "2019-11" ? runmax.value=73266
+        : beamtime == "2019_11-ver01" ? runmax.value=73266
         : runmax.value=""
 
         // RCDB CALL
@@ -828,25 +941,18 @@ function FillDefaults(beamtime){
     // GEANT
     if(beamtime=="custom")
     {
-        // console.log("TEST THIS!!")
-        // document.getElementById("Geant3Label").style.visibility="initial"
         document.getElementById("Geant3").style.visibility="initial"
         document.getElementById("Geant3text").style.visibility="initial"
         document.getElementById("Geant4").style.visibility="initial"
-        // document.getElementById("Geant4text").style.visibility="initial"
-        // document.getElementById("GeantSecondariesLabel").style.visibility="initial"
         document.getElementById("GeantSecondaries").style.visibility="initial"
         document.getElementById("GeantSecYes").style.visibility="hidden"
     }
     else {
-        // document.getElementById("Geant3Label").style.visibility="hidden"
         document.getElementById("Geant3").checked=false
         document.getElementById("Geant3").style.visibility="hidden"
         document.getElementById("Geant3text").style.visibility="hidden"
         document.getElementById("Geant4").checked=true
         document.getElementById("Geant4").style.visibility="hidden"
-        // document.getElementById("Geant4text").style.visibility="hidden"
-        // document.getElementById("GeantSecondariesLabel").style.visibility="hidden"
         document.getElementById("GeantSecondaries").style.visibility="hidden"
         document.getElementById("GeantSecondaries").checked=true
         document.getElementById("GeantSecYes").style.visibility="visible"
@@ -854,27 +960,27 @@ function FillDefaults(beamtime){
 
     //BACKGROUNDS
     var bkgselect = document.getElementById("bkg")
-    var rndtag = document.getElementById("randomtag")
     if(beamtime=="custom")
     {
-        if(bkgselect.value!="None"){
-            bkgselect.value="None"
-            updateBKGoptions()
-        }
-        rndtag.value="recon-2017_01-ver03.2"
+        MakeSelectedByValue(bkgselect,"None")
+        updateBKGoptions();
+        
     }
     else {
-        if(bkgselect.value!="Random"){
-            bkgselect.value="Random"
-            updateBKGoptions()
-        }
-        beamtime == "2017-01" ? rndtag.value="recon-2017_01-ver03.2"
-        : beamtime == "2018-01" ? rndtag.value="recon-2018_01-ver02.2"
-        : beamtime == "2018-08" ? rndtag.value="recon-2018_08-ver02.2"
-        : beamtime == "lowE" ? rndtag.value="recon-2018_08-ver02.2"
-        : beamtime == "2019-11" ? rndtag.value="recon-2019_11-ver01"
-        : rndtag.value="recon-2017_01-ver03.2"
+        MakeSelectedByValue(bkgselect,"Random")
+        updateBKGoptions();
+        
+        var rndtag = document.getElementById("randomtag")
+        beamtime == "2017_01-ver03" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+        : beamtime == "2017_01-ver04" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+        : beamtime == "2018_01-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_01-ver02.2")
+        : beamtime == "2018_08-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
+        : beamtime == "lowE" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
+        : beamtime == "2019_11-ver01" ? MakeSelectedByValue(rndtag,"recon-2019_11-ver01")
+        : MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
     }
+
+    MakeCheckButton()
 
 }
 
