@@ -71,8 +71,10 @@
                     <!--<input type="radio" id="switch_3_right" name="switch_3" value="no" />
                     <label for="switch_3_right">Three</label>-->
             </div>
-            <div id="beamtimeSelector">
 
+            <input type="hidden" value="" id="maxrunrange" name="maxrunrange">
+            <div id="beamtimeSelector">
+                
             </div>
             <br>
             <br>
@@ -357,6 +359,7 @@ function LoopAndFill(result)
         updateRangeoptions();
         document.getElementById("runnum").value=result.RunNumLow
         document.getElementById("maxRunNum").value=result.RunNumHigh
+        document.getElementById("maxrunrange").value=result.RunNumHigh
         document.getElementById("rcdbq").value=result.RCDBQuery
     }
 
@@ -895,6 +898,7 @@ function FillDefaults(beamtime){
         }
         var runmin = document.getElementById("runnum")
         runmin.value=""
+        document.getElementById("maxrunrange").value=""
     }
     else {
         if(range.value=="Number"){
@@ -917,6 +921,7 @@ function FillDefaults(beamtime){
         : beamtime == "lowE" ? runmax.value=51457
         : beamtime == "2019_11-ver01" ? runmax.value=73266
         : runmax.value=""
+        document.getElementById("maxrunrange").value=runmax.value
 
         // RCDB CALL
         var rcdbquery = document.getElementById("rcdbq")
@@ -2907,6 +2912,8 @@ function updateRangeoptions()
             var numevts=document.getElementById("numevt");
             numevts.title="Integer number representing the total desired events to produce.\nNote: because events are generated in proporition to events taken and non integers values are not possible then this is only an approximate value"
 
+            if(document.getElementById("maxRunNum"))
+                document.getElementById("maxrunrange").value=document.getElementById("maxRunNum").value
             removeElementByID("dash")
             removeElementByID("rcdbbr")
             removeElementByID("rcdbbr2")
@@ -2930,6 +2937,7 @@ function updateRangeoptions()
             runnumhigh.title="Place the upper run number of the range here"
             runnumhigh.placeholder="11555"
             runnumhigh.required=true;
+            runnumhigh.value=document.getElementById("maxrunrange").value
             //form.appendChild(runnumhigh);
 
             anchor.parentNode.insertBefore(runnumhigh,anchor.nextSibling)
