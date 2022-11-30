@@ -774,12 +774,14 @@ function MakeGlueXBeamTimeSelector()
     inCustom.setAttribute("id","inCustom")
     inCustom.setAttribute("name","btsel")
     inCustom.setAttribute("value","custom")
+    inCustom.setAttribute("checked",true)
     inCustom.setAttribute("onclick","FillDefaults('custom');")
     form.appendChild(inCustom)
     var labelCustom=document.createElement("LABEL");
     labelCustom.setAttribute("for", "inCustom");
     labelCustom.appendChild(document.createTextNode("custom"))
     form.appendChild(labelCustom)
+    
 }
 function FillDefaults(beamtime){
     
