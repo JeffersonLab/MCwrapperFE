@@ -73,6 +73,7 @@
             </div>
 
             <input type="hidden" value="" id="maxrunrange" name="maxrunrange">
+            <input type="hidden" value="" id="savedrcdbquery" name="savedrcdbquery">
             <div id="beamtimeSelector">
                 
             </div>
@@ -899,6 +900,8 @@ function FillDefaults(beamtime){
         var runmin = document.getElementById("runnum")
         runmin.value=""
         document.getElementById("maxrunrange").value=""
+        document.getElementById("savedrcdbquery").value=""
+        document.getElementById("savedrcdbquery").removeAttribute("readonly")
     }
     else {
         if(range.value=="Number"){
@@ -924,8 +927,19 @@ function FillDefaults(beamtime){
         document.getElementById("maxrunrange").value=runmax.value
 
         // RCDB CALL
-        var rcdbquery = document.getElementById("rcdbq")
-        beamtime == "lowE" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current<49" : rcdbquery.value=""
+        if(document.getElementById("rcdbq")){
+            var rcdbquery = document.getElementById("rcdbq")
+            beamtime == "2017_01-ver03" ?  rcdbquery.value="@is_production and @status_approved"
+            : beamtime == "2017_01-ver04" ?  rcdbquery.value="@is_production and @status_approved"
+            : beamtime == "2018_01-ver02" ?  rcdbquery.value="@is_2018production and @status_approved"
+            : beamtime == "2018_08-ver02" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current>49"
+            : beamtime == "lowE" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current<49"
+            : beamtime == "2019_11-ver01" ?  rcdbquery.value="@is_dirc_production and @status_approved"
+            : rcdbquery.value=""
+            rcdbquery.setAttribute("readonly","")
+            document.getElementById("savedrcdbquery").value=rcdbquery.value
+            document.getElementById("savedrcdbquery").setAttribute("readonly","")
+        }
     }
 
     // FLUX
@@ -2912,8 +2926,14 @@ function updateRangeoptions()
             var numevts=document.getElementById("numevt");
             numevts.title="Integer number representing the total desired events to produce.\nNote: because events are generated in proporition to events taken and non integers values are not possible then this is only an approximate value"
 
-            if(document.getElementById("maxRunNum"))
+            if(document.getElementById("maxRunNum")){
                 document.getElementById("maxrunrange").value=document.getElementById("maxRunNum").value
+            }
+            if(document.getElementById("rcdbq")){
+                document.getElementById("savedrcdbquery").value=document.getElementById("rcdbq").value
+                if(document.getElementById("rcdbq").hasAttribute("readonly"))
+                    document.getElementById("savedrcdbquery").setAttribute("readonly","")
+            }
             removeElementByID("dash")
             removeElementByID("rcdbbr")
             removeElementByID("rcdbbr2")
@@ -2967,6 +2987,9 @@ function updateRangeoptions()
             rcdbq.name="rcdbq"
             rcdbq.placeholder="optional Default: @is_(2018)production and @status_approved"
             rcdbq.style.width="75%";
+            rcdbq.value=document.getElementById("savedrcdbquery").value
+            if(document.getElementById("savedrcdbquery").hasAttribute("readonly"))
+                rcdbq.setAttribute("readonly","")
 
             rcdblabel.parentNode.insertBefore(rcdbq,rcdblabel.nextSibling)
 
