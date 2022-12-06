@@ -133,6 +133,11 @@ function UpdateProject($conn)
         $bkg = $bkg . ":" . $_GET["randomtag"];
     }
 
+    if ( isset($_GET["NoTag"] ) )
+    {
+        $bkg = $bkg . "+NoTag";
+    }
+
     $RL = $_GET["ReactionLines"];
 
     
@@ -460,6 +465,11 @@ function InsertProject($conn)
         if ( isset($_GET["randomtag"]) && $_GET["bkg"] != "loc" )
         {
             $bkg = $bkg . ":" . $_GET["randomtag"];
+        }
+
+        if ( isset($_GET["NoTag"] ) )
+        {
+            $bkg = $bkg . "+NoTag";
         }
 
         $RL = $_GET["ReactionLines"];

@@ -33,7 +33,7 @@ else if( !isset($_GET["verSet"]) )
 }
 else
 {
-    $sql="SELECT DISTINCT filename as version from versionSet where id in (SELECT DISTINCT analysisSetId from version_set_correlations where reconSetId in (SELECT id from versionSet where filename=\"" . $_GET["verSet"] . "\" ))";
+    $sql="SELECT DISTINCT filename as version from versionSet where id in (SELECT DISTINCT analysisSetId from version_set_correlations where reconSetId in (SELECT id from versionSet where filename=\"" . $_GET["verSet"] . "\" )) ORDER BY filename;";
     #echo $sql;
 }
 

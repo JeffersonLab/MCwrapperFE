@@ -18,7 +18,7 @@
                           A fake / hidden checkbox is used as click reciever,
                           so you can use the :checked selector on it.
                           -->
-                          <input type="checkbox" />
+                          <input type="checkbox" style="height:60px"/>
 
                           <!--
                           Some spans to act as a hamburger.
@@ -26,6 +26,7 @@
                           They are acting like a real hamburger,
                           not that McDonalds stuff.
                           -->
+                          Menu
                           <span></span>
                           <span></span>
                           <span></span>
@@ -61,15 +62,23 @@
             <input type="hidden" value=1 id="wall" name="wall">
             <div id="expSelector" class="switch-field">
                     <div class="switch-title">Experiment</div>
-                    <input type="radio" id="GlueX" name="exp" value="GlueX" onclick="ChangeLogo('GlueX');MakeGluexForm();MakeCheckButton();alphabetizeslector()" checked/>
+                    <input type="radio" id="GlueX" name="exp" value="GlueX" onclick="ChangeLogo('GlueX');MakeGlueXBeamTimeSelector();MakeCheckButton();alphabetizeslector()" checked/>
                     <label for="GlueX">GlueX</label>
-                    <input type="radio" id="CPP" name="exp" value="CPP" onclick="ChangeLogo('CPP');MakeCPPForm();MakeCheckButton();alphabetizeslector()" />
+                    <input type="radio" id="CPP" name="exp" value="CPP" onclick="ChangeLogo('CPP');MakeCPPBeamTimeSelector();MakeCPPForm();MakeCheckButton();alphabetizeslector()" />
                     <label for="CPP">CPP</label>
-                    <input type="radio" id="JEF" name="exp" value="JEF" onclick="ChangeLogo('JEF');MakeJEFForm();MakeCheckButton();alphabetizeslector()" />
+                    <input type="radio" id="JEF" name="exp" value="JEF" onclick="ChangeLogo('JEF');MakeJEFBeamTimeSelector();MakeJEFForm();MakeCheckButton();alphabetizeslector()" />
                     <label for="JEF">JEF</label>
                     <!--<input type="radio" id="switch_3_right" name="switch_3" value="no" />
                     <label for="switch_3_right">Three</label>-->
             </div>
+
+            <input type="hidden" value="" id="maxrunrange" name="maxrunrange">
+            <input type="hidden" value="" id="savedrcdbquery" name="savedrcdbquery">
+            <div id="beamtimeSelector">
+                
+            </div>
+            <br>
+            <br>
             <div id="personal">
 
 
@@ -280,19 +289,21 @@ function prefillForm()
                 if(result.Exp=="GlueX" || result.Exp == "gluex")
                 {
                     document.getElementById("GlueX").checked=true;
-                    MakeGluexForm();
+                    MakeGlueXBeamTimeSelector();
                     ChangeLogo("GlueX")
 
                 }
                 else if( result.Exp=="CPP")
                 {
                     document.getElementById("CPP").checked=true;
+                    MakeCPPBeamTimeSelector()
                     MakeCPPForm()
                     ChangeLogo("CPP")
                 }
                 else if( result.Exp=="JEF")
                 {
                     document.getElementById("JEF").checked=true;
+                    MakeJEFBeamTimeSelector()
                     MakeJEFForm()
                     ChangeLogo("JEF")
                 }
@@ -349,6 +360,7 @@ function LoopAndFill(result)
         updateRangeoptions();
         document.getElementById("runnum").value=result.RunNumLow
         document.getElementById("maxRunNum").value=result.RunNumHigh
+        document.getElementById("maxrunrange").value=result.RunNumHigh
         document.getElementById("rcdbq").value=result.RCDBQuery
     }
 
@@ -607,7 +619,7 @@ function Initialize()
     }
     else
     {
-      MakeGluexForm();MakeCheckButton();alphabetizeslector()
+      MakeGlueXBeamTimeSelector();MakeCheckButton();alphabetizeslector()
     }
     getBalance();
 }
@@ -679,6 +691,330 @@ function ChangeLogo(newlogo)
         document.getElementById("explogo").style.className="run-fadeIn";
     }
 
+}
+function MakeGlueXBeamTimeSelector()
+{
+    
+    MakeGluexForm();
+
+    var form=document.getElementById("beamtimeSelector");
+    form.innerHTML=""
+    form.setAttribute("class","switch-field")
+
+    var selLabel=document.createElement("div")
+    selLabel.setAttribute("class","switch-title")
+    selLabel.appendChild(document.createTextNode("Beam time"))
+    form.appendChild(selLabel)
+
+    
+    var in20170103 = document.createElement("input")
+    in20170103.setAttribute("type","radio")
+    in20170103.setAttribute("id","in20170103")
+    in20170103.setAttribute("name","btsel")
+    in20170103.setAttribute("value","2017_01-ver03")
+    in20170103.setAttribute("onclick","FillDefaults('2017_01-ver03');")
+    form.appendChild(in20170103)
+    var label20170103=document.createElement("LABEL");
+    label20170103.setAttribute("for", "in20170103");
+    label20170103.appendChild(document.createTextNode("2017-01 (ver03)"))
+    form.appendChild(label20170103)
+    var in20170104 = document.createElement("input")
+    in20170104.setAttribute("type","radio")
+    in20170104.setAttribute("id","in20170104")
+    in20170104.setAttribute("name","btsel")
+    in20170104.setAttribute("value","2017_01-ver04")
+    in20170104.setAttribute("onclick","FillDefaults('2017_01-ver04');")
+    form.appendChild(in20170104)
+    var label20170104=document.createElement("LABEL");
+    label20170104.setAttribute("for", "in20170104");
+    label20170104.appendChild(document.createTextNode("2017-01 (ver04)"))
+    form.appendChild(label20170104)
+    var in201801 = document.createElement("input")
+    in201801.setAttribute("type","radio")
+    in201801.setAttribute("id","in201801")
+    in201801.setAttribute("name","btsel")
+    in201801.setAttribute("value","2018_01")
+    in201801.setAttribute("onclick","FillDefaults('2018_01-ver02');")
+    form.appendChild(in201801)
+    var label201801=document.createElement("LABEL");
+    label201801.setAttribute("for", "in201801");
+    label201801.appendChild(document.createTextNode("2018-01"))
+    form.appendChild(label201801)
+    var in201808 = document.createElement("input")
+    in201808.setAttribute("type","radio")
+    in201808.setAttribute("id","in201808")
+    in201808.setAttribute("name","btsel")
+    in201808.setAttribute("value","2018_08")
+    in201808.setAttribute("onclick","FillDefaults('2018_08-ver02');")
+    form.appendChild(in201808)
+    var label201808=document.createElement("LABEL");
+    label201808.setAttribute("for", "in201808");
+    label201808.appendChild(document.createTextNode("2018-08"))
+    form.appendChild(label201808)
+    var in201808lowE = document.createElement("input")
+    in201808lowE.setAttribute("type","radio")
+    in201808lowE.setAttribute("id","in201808lowE")
+    in201808lowE.setAttribute("name","btsel")
+    in201808lowE.setAttribute("value","2018_08")
+    in201808lowE.setAttribute("onclick","FillDefaults('lowE');")
+    form.appendChild(in201808lowE)
+    var label201808lowE=document.createElement("LABEL");
+    label201808lowE.setAttribute("for", "in201808lowE");
+    label201808lowE.appendChild(document.createTextNode("2018-08 lowE"))
+    form.appendChild(label201808lowE)
+    var in201911 = document.createElement("input")
+    in201911.setAttribute("type","radio")
+    in201911.setAttribute("id","in201911")
+    in201911.setAttribute("name","btsel")
+    in201911.setAttribute("value","2019_11")
+    in201911.setAttribute("onclick","FillDefaults('2019_11-ver01');")
+    form.appendChild(in201911)
+    var label201911=document.createElement("LABEL");
+    label201911.setAttribute("for", "in201911");
+    label201911.appendChild(document.createTextNode("2019-11"))
+    form.appendChild(label201911)
+    var inCustom = document.createElement("input")
+    inCustom.setAttribute("type","radio")
+    inCustom.setAttribute("id","inCustom")
+    inCustom.setAttribute("name","btsel")
+    inCustom.setAttribute("value","custom")
+    inCustom.setAttribute("checked",true)
+    inCustom.setAttribute("onclick","FillDefaults('custom');")
+    form.appendChild(inCustom)
+    var labelCustom=document.createElement("LABEL");
+    labelCustom.setAttribute("for", "inCustom");
+    labelCustom.appendChild(document.createTextNode("custom"))
+    form.appendChild(labelCustom)
+    
+}
+function FillDefaults(beamtime){
+    
+    //VERSION SETS (Pick the first that fits the beam time. It will be the most recent.)
+    var reconver = document.getElementById("recon_stack")
+    for(var i = 0; i < reconver.length; i++){
+        if(reconver[i].value.startsWith("recon-"+beamtime)){
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if(beamtime=="2017_01-ver04" && reconver[i].value.startsWith("recon-2019_11-ver01")){ //special case since 2017_01-ver04 is same reco as 2019_11-ver01
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if (beamtime=="lowE" && reconver[i].value.startsWith("recon-2018_08")){
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if (beamtime=="custom"){
+            MakeSelectedByValue(reconver,reconver[0].value)
+            break
+        }
+    }
+
+    //DoSimQuery()
+    // need to do it here since we need to wait for XMLHttpRequest to respond
+    // before we can set the version set "by hand", couldn't do it with a function call
+    var selRecon = reconver.options[reconver.selectedIndex].value;
+    if (window.XMLHttpRequest) {
+        // code for IE7+, Firefox, Chrome, Opera, Safari
+        xmlhttp = new XMLHttpRequest();
+    } else {
+        // code for IE6, IE5
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            result=JSON.parse(this.responseText);
+            console.log(result)
+            PopulateVer("sim_ver",result)
+            if(document.getElementById("prefill").value != "-1" )
+            {
+            MakeSelectedByValue(document.getElementById("sim_ver"),project.sim_ver)
+            }
+
+            // DoSetQuery()
+            var sims = document.getElementById("sim_ver");
+            var selSim = sims.options[sims.selectedIndex].value;
+            if (window.XMLHttpRequest) {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp2 = new XMLHttpRequest();
+            } else {
+                // code for IE6, IE5
+                xmlhttp2 = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp2.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+
+                    result2=JSON.parse(this.responseText);
+
+                    console.log(result2)
+                    PopulateVer("verSet",result2)
+                    if(document.getElementById("prefill").value != "-1" )
+                    {
+
+                    MakeSelectedByValue(document.getElementById("verSet"),project.VersionSet)
+                    }
+                    //special case since 2017_01-ver04 is same reco as 2019_11-ver01 but has different version set
+                    //can easily be generalised if more such cases arise
+                    if(beamtime=="2017_01-ver04"){
+                        var verset = document.getElementById("verSet")
+                        for(var i = 0; i < verset.length; i++){
+                            if(verset[i].value.startsWith("recon-2017_01-ver04")){
+                                MakeSelectedByValue(verset,verset[i].value)
+                                break
+                            }
+                        }
+                    }
+                    updatePreview();
+                    if(document.getElementById("ReactionLines").value != "" && document.getElementById("prefill").value != "-1" && !document.getElementById("anaverSet"))
+                    {
+                    addANAselector()
+                    }
+                    else if(document.getElementById("anaverSet"))
+                    {
+                        DoANASetQuery();
+                    }
+                }
+
+            }
+            query_to_do="SELECT DISTINCT"
+            console.log("./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver="+selSim)
+            xmlhttp2.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver="+selSim);
+            xmlhttp2.send();
+            }
+
+        }
+    query_to_do="SELECT DISTINCT"
+    console.log("./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown")
+    xmlhttp.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown");
+    xmlhttp.send();
+
+
+    //RUNRANGES
+    var range = document.getElementById("numOrRange")
+    if(beamtime=="custom")
+    {
+        if(range.value=="Range"){
+            MakeSelectedByValue(range,"Number")
+            updateRangeoptions()
+        }
+        var runmin = document.getElementById("runnum")
+        runmin.value=""
+        document.getElementById("maxrunrange").value=""
+        document.getElementById("savedrcdbquery").value=""
+        document.getElementById("savedrcdbquery").removeAttribute("readonly")
+    }
+    else {
+        if(range.value=="Number"){
+            MakeSelectedByValue(range,"Range")
+            updateRangeoptions()
+        }
+        var runmin = document.getElementById("runnum")
+        var runmax = document.getElementById("maxRunNum")
+        beamtime == "2017_01-ver03" ? runmin.value=30274
+        : beamtime == "2017_01-ver04" ? runmin.value=30274
+        : beamtime == "2018_01-ver02" ? runmin.value=40856
+        : beamtime == "2018_08-ver02" ? runmin.value=50677
+        : beamtime == "lowE" ? runmin.value=51384
+        : beamtime == "2019_11-ver01" ? runmin.value=71350
+        : runmin.value=""
+        beamtime == "2017_01-ver03" ? runmax.value=31057
+        : beamtime == "2017_01-ver04" ? runmax.value=31057
+        : beamtime == "2018_01-ver02" ? runmax.value=42577
+        : beamtime == "2018_08-ver02" ? runmax.value=51768
+        : beamtime == "lowE" ? runmax.value=51457
+        : beamtime == "2019_11-ver01" ? runmax.value=73266
+        : runmax.value=""
+        document.getElementById("maxrunrange").value=runmax.value
+
+        // RCDB CALL
+        if(document.getElementById("rcdbq")){
+            var rcdbquery = document.getElementById("rcdbq")
+            beamtime == "2017_01-ver03" ?  rcdbquery.value="@is_production and @status_approved"
+            : beamtime == "2017_01-ver04" ?  rcdbquery.value="@is_production and @status_approved"
+            : beamtime == "2018_01-ver02" ?  rcdbquery.value="@is_2018production and @status_approved"
+            : beamtime == "2018_08-ver02" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current>49"
+            : beamtime == "lowE" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current<49"
+            : beamtime == "2019_11-ver01" ?  rcdbquery.value="@is_dirc_production and @status_approved"
+            : rcdbquery.value=""
+            rcdbquery.setAttribute("readonly","")
+            document.getElementById("savedrcdbquery").value=rcdbquery.value
+            document.getElementById("savedrcdbquery").setAttribute("readonly","")
+        }
+    }
+
+    // FLUX
+    if(beamtime=="custom")
+    {
+        document.getElementById("ccdb_flux").checked=true
+        document.getElementById("ccdb_flux").style.visibility="initial"
+        document.getElementById("cobrems_flux").checked=false
+        document.getElementById("cobrems_flux").style.visibility="initial"
+        document.getElementById("cobremsText").style.visibility="initial"
+    }
+    else {
+        document.getElementById("ccdb_flux").checked=true
+        document.getElementById("ccdb_flux").style.visibility="hidden"
+        document.getElementById("cobrems_flux").checked=false
+        document.getElementById("cobrems_flux").style.visibility="hidden"
+        document.getElementById("cobremsText").style.visibility="hidden"
+        
+    }
+
+    // GEANT
+    if(beamtime=="custom")
+    {
+        document.getElementById("Geant3").style.visibility="initial"
+        document.getElementById("Geant3text").style.visibility="initial"
+        document.getElementById("Geant4").style.visibility="initial"
+        document.getElementById("GeantSecondaries").style.visibility="initial"
+        document.getElementById("GeantSecYes").style.visibility="hidden"
+    }
+    else {
+        document.getElementById("Geant3").checked=false
+        document.getElementById("Geant3").style.visibility="hidden"
+        document.getElementById("Geant3text").style.visibility="hidden"
+        document.getElementById("Geant4").checked=true
+        document.getElementById("Geant4").style.visibility="hidden"
+        document.getElementById("GeantSecondaries").style.visibility="hidden"
+        document.getElementById("GeantSecondaries").checked=true
+        document.getElementById("GeantSecYes").style.visibility="visible"
+    }
+
+    //BACKGROUNDS
+    var bkgselect = document.getElementById("bkg")
+    if(beamtime=="custom")
+    {
+        MakeSelectedByValue(bkgselect,"None")
+        updateBKGoptions();
+        
+    }
+    else {
+        MakeSelectedByValue(bkgselect,"Random")
+        updateBKGoptions();
+        
+        var rndtag = document.getElementById("randomtag")
+        beamtime == "2017_01-ver03" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+        : beamtime == "2017_01-ver04" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+        : beamtime == "2018_01-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_01-ver02.2")
+        : beamtime == "2018_08-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
+        : beamtime == "lowE" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
+        : beamtime == "2019_11-ver01" ? MakeSelectedByValue(rndtag,"recon-2019_11-ver01")
+        : MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+    }
+
+    MakeCheckButton()
+
+}
+
+function MakeCPPBeamTimeSelector()
+{
+    var form=document.getElementById("beamtimeSelector");
+    form.innerHTML=""
+}
+function MakeJEFBeamTimeSelector()
+{
+    var form=document.getElementById("beamtimeSelector");
+    form.innerHTML=""
 }
 function MakeGluexForm()
 {
@@ -893,7 +1229,10 @@ function MakeGluexForm()
     ccdbin.setAttribute("onclick","updateGenFluxOptions();MakeCheckButton();");
 
     form.appendChild(ccdbin);
-    form.appendChild(document.createTextNode("ccdb"))
+    var ccdbText=document.createElement("span")
+    ccdbText.setAttribute("id","ccdbText")
+    ccdbText.appendChild(document.createTextNode("ccdb"))
+    form.appendChild(ccdbText)
 
     var cobremsin=document.createElement("INPUT");
     cobremsin.type="radio"
@@ -905,7 +1244,10 @@ function MakeGluexForm()
 
 
     form.appendChild(cobremsin);
-    form.appendChild(document.createTextNode("cobrems"))
+    var cobremsText=document.createElement("span")
+    cobremsText.setAttribute("id","cobremsText")
+    cobremsText.appendChild(document.createTextNode("cobrems"))
+    form.appendChild(cobremsText)
 
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))
@@ -963,6 +1305,7 @@ function MakeGluexForm()
     //GEANT VER
     var geantlabel=document.createElement("LABEL");
     geantlabel.setAttribute("for", "Geantver");
+    geantlabel.setAttribute("id","Geant3Label")
     geantlabel.appendChild(document.createTextNode("Geant Version:"))
     form.appendChild(geantlabel)
     var g3in=document.createElement("INPUT");
@@ -974,7 +1317,10 @@ function MakeGluexForm()
     g3in.setAttribute("onclick","MakeCheckButton();");
 
     form.appendChild(g3in);
-    form.appendChild(document.createTextNode("Geant3"))
+    var Geant3text = document.createElement("span")
+    Geant3text.setAttribute("id","Geant3text")
+    Geant3text.appendChild(document.createTextNode("Geant3"))
+    form.appendChild(Geant3text)
 
     var g4in=document.createElement("INPUT");
     g4in.type="radio"
@@ -986,12 +1332,16 @@ function MakeGluexForm()
 
 
     form.appendChild(g4in);
-    form.appendChild(document.createTextNode("Geant4"))
+    var Geant4text = document.createElement("span")
+    Geant4text.setAttribute("id","Geant4text")
+    Geant4text.appendChild(document.createTextNode("Geant4"))
+    form.appendChild(Geant4text)
 
     form.appendChild(document.createElement("BR"))
 
     //GEANT SECONDARIES
     var geantseclabel=document.createElement("LABEL");
+    geantseclabel.setAttribute("id","GeantSecondariesLabel")
     geantseclabel.setAttribute("for", "Geantver");
     geantseclabel.appendChild(document.createTextNode("Geant Secondaries?"))
     form.appendChild(geantseclabel)
@@ -1003,6 +1353,11 @@ function MakeGluexForm()
     gsecin.checked=true;
 
     form.appendChild(gsecin);
+    var GeantSecYes = document.createElement("span")
+    GeantSecYes.setAttribute("id","GeantSecYes")
+    GeantSecYes.setAttribute("style","visibility:hidden")
+    GeantSecYes.appendChild(document.createTextNode("yes"))
+    form.appendChild(GeantSecYes);
 
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))
@@ -1023,6 +1378,20 @@ function MakeGluexForm()
     form.appendChild(bkgselect)
 
     populateBackgrounds("GlueX");
+
+    form.appendChild(document.createElement("BR"))
+    var notaglabel=document.createElement("LABEL");
+    notaglabel.setAttribute("for", "NoTag");
+    notaglabel.appendChild(document.createTextNode("No tagger accidentals:"))
+    form.appendChild(notaglabel)
+    var rnotag=document.createElement("INPUT");
+    rnotag.type="checkbox"
+    rnotag.id="NoTag"
+    rnotag.name="NoTag"
+    rnotag.value="NoTag"
+    rnotag.checked=false;
+    form.appendChild(rnotag);
+
 
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))
@@ -1434,7 +1803,7 @@ function MakeJEFForm()
     //verselect.onchange="updatePreview();MakeCheckButton()"
     form.appendChild(bkgselect)
 
-    populateBackgrounds("GlueX");
+    populateBackgrounds("JEF");
 
     form.appendChild(document.createElement("BR"))
     form.appendChild(document.createElement("BR"))
@@ -2557,6 +2926,14 @@ function updateRangeoptions()
             var numevts=document.getElementById("numevt");
             numevts.title="Integer number representing the total desired events to produce.\nNote: because events are generated in proporition to events taken and non integers values are not possible then this is only an approximate value"
 
+            if(document.getElementById("maxRunNum")){
+                document.getElementById("maxrunrange").value=document.getElementById("maxRunNum").value
+            }
+            if(document.getElementById("rcdbq")){
+                document.getElementById("savedrcdbquery").value=document.getElementById("rcdbq").value
+                if(document.getElementById("rcdbq").hasAttribute("readonly"))
+                    document.getElementById("savedrcdbquery").setAttribute("readonly","")
+            }
             removeElementByID("dash")
             removeElementByID("rcdbbr")
             removeElementByID("rcdbbr2")
@@ -2580,6 +2957,7 @@ function updateRangeoptions()
             runnumhigh.title="Place the upper run number of the range here"
             runnumhigh.placeholder="11555"
             runnumhigh.required=true;
+            runnumhigh.value=document.getElementById("maxrunrange").value
             //form.appendChild(runnumhigh);
 
             anchor.parentNode.insertBefore(runnumhigh,anchor.nextSibling)
@@ -2609,6 +2987,9 @@ function updateRangeoptions()
             rcdbq.name="rcdbq"
             rcdbq.placeholder="optional Default: @is_(2018)production and @status_approved"
             rcdbq.style.width="75%";
+            rcdbq.value=document.getElementById("savedrcdbquery").value
+            if(document.getElementById("savedrcdbquery").hasAttribute("readonly"))
+                rcdbq.setAttribute("readonly","")
 
             rcdblabel.parentNode.insertBefore(rcdbq,rcdblabel.nextSibling)
 
