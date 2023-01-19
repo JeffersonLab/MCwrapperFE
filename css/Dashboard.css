@@ -27,74 +27,53 @@ html, body{
     65%{background-size:background-size% 100%}
     100%{background-size:background-size% 100%}
 }
-td.highlightprogress {
-    font-weight: bold;
-    background: linear-gradient(to right,rgba(0,0,50,1) 0%,rgba(0,0,64,1) 25%,rgba(0,0,128,1) 50%,rgba(0,0,256,1) 100%);/*,linear-gradient(to left,rgba(50,0,0,1) 0%,rgba(64,0,0,1) 25%,rgba(128,0,0,1) 50%,rgba(256,0,0,1) 100%);
-    */background-repeat: no-repeat;
-    background-position: left,right;
-    /*background-attachment: fixed;*/
-    text-align: center;
-    -webkit-animation: progAni 2s 5;
-    -moz-animation: progAni 2s 5;
-    animation-delay:5s;
-    animation: progAni 3s 1;
-    /*animation-timing-function: linear;*/
-
-
-
-    /*color: blue;*/
-}
 td.highlightprogressblue {
     font-weight: bold;
-    background: linear-gradient(to right,rgba(0,0,50,1) 0%,rgba(0,0,64,1) 25%,rgba(0,0,128,1) 50%,rgba(0,0,256,1) 100%);/*,linear-gradient(to left,rgba(50,0,0,1) 0%,rgba(64,0,0,1) 25%,rgba(128,0,0,1) 50%,rgba(256,0,0,1) 100%);
-    */background-repeat: no-repeat;
-    background-position: left,right;
-    /*background-attachment: fixed;*/
+    background: linear-gradient(to right,rgba(0,0,50,1) 0%,rgba(0,0,64,1) 25%,rgba(0,0,128,1) 50%,rgba(0,0,256,1) 100%);
+    background-position: left;
+    background-repeat: no-repeat;
     text-align: center;
-    -webkit-animation: progAni 2s 5;
-    -moz-animation: progAni 2s 5;
-    animation-delay:5s;
-    animation: progAni 3s 1;
-    /*animation-timing-function: linear;*/
-
-
-
-    /*color: blue;*/
+    animation: scroll-progress 5s 1;
+    animation-delay: 2s;  /*Add a delay of 30 seconds before repeating the animation */
+    background-size: var(--td-value);
 }
+  
+  @keyframes scroll-progress {
+    0% {
+      background-position: left;
+      background-size: 0% ;
+    }
+    100% {
+      background-position: left;
+      background-size: var(--td-value);
+    }
+  }
+  
+  td.highlightprogressred {
+    font-weight: bold;
+    background: linear-gradient(to right,rgba(50,0,0,1) 0%,rgba(64,0,0,1) 25%,rgba(128,0,0,1) 50%,rgba(256,0,0,1) 100%);
+    background-position: left;
+    background-repeat: no-repeat;
+    text-align: center;
+    animation: scroll-progress 5s 1;
+    animation-delay: 1s;  /* Add a delay of 30 seconds before repeating the animation */
+    
+    /* Calculate the background-size based on the value of the td element */
+    background-size: var(--td-value);
+  }
+
 td.highlightprogressyellow {
     font-weight: bold;
-    background: linear-gradient(to right,rgba(50,50,0,1) 0%,rgb(64, 63, 0) 25%,rgb(128, 126, 0) 50%,rgba(256,256,0,1) 100%);/*,linear-gradient(to left,rgba(50,0,0,1) 0%,rgba(64,0,0,1) 25%,rgba(128,0,0,1) 50%,rgba(256,0,0,1) 100%);
-    */background-repeat: no-repeat;
-    background-position: left,right;
-    /*background-attachment: fixed;*/
+    background: linear-gradient(to right,rgba(50,50,0,1) 0%,rgba(64,64,0,1) 25%,rgba(128,128,0,1) 50%,rgba(256,256,0,1) 100%);
+    background-position: left;
+    background-repeat: no-repeat;
     text-align: center;
-    -webkit-animation: progAni 2s 5;
-    -moz-animation: progAni 2s 5;
-    animation-delay:5s;
-    animation: progAni 3s 1;
-    /*animation-timing-function: linear;*/
-
-
-
-    /*color: yellow;*/
+    animation: scroll-progress 5s 1;
+    animation-delay: 1s;  /*Add a delay of 30 seconds before repeating the animation */
+    background-size: var(--td-value);
+    
 }
-td.highlightprogressred {
-    font-weight: bold;
-    background: linear-gradient(to right,rgba(50,0,0,1) 0%,rgb(64, 0, 0) 25%,rgba(128,0,0,1) 50%,rgba(256,0,0,1) 100%);/*,linear-gradient(to left,rgba(50,0,0,1) 0%,rgba(64,0,0,1) 25%,rgba(128,0,0,1) 50%,rgba(256,0,0,1) 100%);
-    */background-repeat: no-repeat;
-    background-position: left,right;
-    /*background-attachment: fixed;*/
-    text-align: center;
-    -webkit-animation: progAni 2s 5;
-    -moz-animation: progAni 2s 5;
-    animation-delay:5s;
-    animation: progAni 3s 1;
-    /*animation-timing-function: linear;*/
 
-
-
-    /*color: red;*/
-}
 td.higlightFAILprogress{
     background: linear-gradient(to left,rgba(50,0,0,1) 0%,rgba(64,0,0,1) 25%,rgba(128,0,0,1) 50%,rgba(256,0,0,1) 100%);
     background-repeat: no-repeat;
@@ -138,18 +117,30 @@ td.highlightprogress_noAnired {
 
     /*color: red;*/
 }
-td.highlighttestfail {
-    color:rgba(255, 0, 0, 0);
+@keyframes pulsered {
+    0% {
+      background-color: rgba(255, 0, 0, 0.616);
+    }
+    50% {
+      background-color: rgba(255, 0, 0, 0);
+    }
+    100% {
+      background-color: rgba(255, 0, 0, 0.616);
+    }
+  }
+  .highlighttestfail {
+    animation: pulsered 1s infinite;
+    color: rgba(255, 0, 0, 0);
     font-weight: bold;
-    background-color: rgba(255, 0, 0, 0.616);
     text-align: center;
-    /*color: blue;*/
-}
+  }
+
 td.highlighttestpass {
     color: rgba(0, 255, 0, 0);
     font-weight: none;
     background-color: rgba(0, 255, 0, 0.616);
     text-align: center;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
     /*color: blue;*/
 }
 td.highlightsuspended {

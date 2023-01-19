@@ -12,7 +12,7 @@ while ($frow = $fresult->fetch_assoc()) {
 }
 #print_r($fresult->fetch);
 $conn->close();
-
+#var_dump($foremen);
 if (in_array($_SERVER['PHP_AUTH_USER'],$foremen,TRUE))
 {
     echo "1";

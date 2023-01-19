@@ -22,8 +22,13 @@ if($_GET["Table"]=="ProjectF")
 if($_GET["Table"]=="Attempts")
 {
     //$sql="SELECT * FROM Attempts WHERE Job_ID IN (SELECT ID FROM Jobs WHERE Project_ID=" . $_GET["projID"] . ") GROUP BY Job_ID;";
-    $sql="SELECT * FROM Attempts WHERE ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=" . $_GET["projID"] . ");";
+    //$sql="SELECT * FROM Attempts WHERE ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=" . $_GET["projID"] . ");";
 //    $sql="SELECT Attempts.*,Max(Attempts.Creation_Time) FROM Attempts,Jobs WHERE Attempts.Job_ID = Jobs.ID && Jobs.Project_ID=" . $_GET["projID"] . " GROUP BY Attempts.Job_ID;";
+      $sql="select Attempts.*, Jobs.IsActive, Jobs.RunNumber, Jobs.NumEvts, Jobs.FileNumber
+      from Jobs
+      inner join Attempts on Attempts.Job_ID = Jobs.id and Attempts.id = (select max(id) from Attempts latest_attempts where latest_attempts.job_id = Jobs.id)
+      where Project_ID = " . $_GET["projID"] . " ORDER BY IsActive desc";
+
 }
 if($_GET["Table"]=="Ticker")
 {
@@ -51,27 +56,34 @@ if(isset($_GET["lock"]))
 }
 
 $result = $conn->query($sql);
-$containing = [];
-$containing["data"] = array();
+#$containing = [];
+#$containing["data"] = array();
 $data = array();
 
+#var_dump($result);
+$count=0;
 if ($result->num_rows > 0) {
 // output data of each row
     while($row = $result->fetch_assoc()) {
-
+        #var_dump($row);
+        #echo "<br>";
         if($_GET["Table"]=="ProjectF" && TRUE )
         {
+        $count=$count+1;
         $compq="SELECT COUNT(DISTINCT Job_ID) from Attempts where (Status=\"4\" || Status=\"succeeded\" || Status=\"44\") && ExitCode=\"0\" && Job_ID in (SELECT ID From Jobs where Project_ID=".$row["ID"]." && IsActive=1);";
         #echo $compq;
+        #echo "<br>";
+        
         $compresult = $conn->query($compq);
         #print_r( $compresult->fetch_assoc());
         #echo $compresult->fetch_assoc()["COUNT(ID)"];
 
-        $failq="SELECT COUNT(*) FROM Attempts WHERE (Status=\"4\" && ExitCode>0) && ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=".$row["ID"].");";
+        #$failq="SELECT COUNT(*) FROM Attempts WHERE (Status=\"4\" && ExitCode>0) && ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=".$row["ID"].");";
         #$failq="SELECT COUNT(DISTINCT Job_ID) from Attempts where (Status=\"5\" || Status=\"4\" || Status=\"problem\") && ExitCode!=\"0\" && Job_ID in (SELECT ID From Jobs where Project_ID=".$row["ID"]." && IsActive=1)# && ID in (SELECT MAX(ID) from Attempts where Job_ID in (SELECT ID from Jobs where Project_ID=".$row["ID"]." && IsActive=1) GROUP BY Job_ID);";
+        $failq="select COUNT(*) from Jobs inner join Attempts on Attempts.Job_ID = Jobs.id and Attempts.id = (select max(id) from Attempts latest_attempts where latest_attempts.job_id = Jobs.id) where Project_ID =". $row["ID"] ."&& Attempts.ExitCode>0 && Attempts.Status=4";
         #echo $failq;
-        
         #echo "<br>";
+        
         $failresult = $conn->query($failq);
 
         $totq="SELECT COUNT(ID) From Jobs where Project_ID=".$row["ID"]." && IsActive=1";
@@ -97,6 +109,7 @@ if ($result->num_rows > 0) {
         $row["FailedProgress"]=$fpercent;
         $row["DeactivatedCount"]=$totdeactresult->fetch_assoc()["COUNT(ID)"];
         $row["FailedCount"]=$fnum;
+        $row["TotalActiveJobs"]=$denom;
         }
 
         $data []= $row;
@@ -107,7 +120,12 @@ if ($result->num_rows > 0) {
         $containing["data"] []= $tempArray;
         */
      //echo "id: " . $row["id"]. " - Run: " . $row["run"]. "<br>";
+        if($count>=2999999999999999999999999999)
+        {
+            return "";
+        }
     }
+    
 } 
 $conn->close();
 

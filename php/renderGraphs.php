@@ -6,7 +6,7 @@ $lookback=4;#hours
 $now = round(microtime(true) * 1000);
 $then =$now-$lookback*60*60*1000;
 
-$url="https://scigraf.jlab.org/render/d-solo/_XK5tYPWk/condor-general-view?orgId=1&from=".$then."&to=".$now."&theme=light&panelId=9&width=1000&height=500&tz=America%2FNew_York";
+$url="https://scigraf.jlab.org/render/d-solo/_nf73ziVk/condor-by-host?orgId=1&var-node=scosg2201&from=".$then."&to=".$now."&theme=light&panelId=9&width=1000&height=500&tz=America%2FNew_York";
 #echo $url;
 #echo "<br><br>";
 
@@ -23,7 +23,7 @@ curl_close($ch);
 
 
 
-$url="https://scigraf.jlab.org/render/d-solo/_XK5tYPWk/condor-general-view?orgId=1&from=".$then."&to=".$now."&theme=light&panelId=10&width=1000&height=500&tz=America%2FNew_York";
+$url="https://scigraf.jlab.org/render/d-solo/_nf73ziVk/condor-by-host?orgId=1&var-node=scosg2201&from=".$then."&to=".$now."&theme=light&panelId=10&width=1000&height=500&tz=America%2FNew_York";
 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $url);

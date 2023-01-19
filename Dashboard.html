@@ -71,7 +71,7 @@
                 //console.log(this.responseText)
                 if(this.responseText != "")
                 {
-                    console.log(this.responseText)
+                    //console.log(this.responseText)
                     //responseText=this.responseText.substring(29,this.responseText.length)
                     graphs=JSON.parse(this.responseText);
                     
@@ -515,6 +515,7 @@ function QueryDatabase()
       
         $('#AttemptsTable').empty();
         $('#JobsTable').empty();
+        $('#ProjTable').empty();
 
         if (window.XMLHttpRequest) {
             // code for IE7+, Firefox, Chrome, Opera, Safari
@@ -695,7 +696,8 @@ function MakeProjectTable()
         /*{ title: "OutputLocation" , data: "OutputLocation" },*/
         { title: "RCDBQuery" , data: "RCDBQuery" },
         { title: "VersionSet" , data: "VersionSet" },
-        { title: "ANA_VersionSet" , data: "ANAVersionSet" }
+        { title: "ANA_VersionSet" , data: "ANAVersionSet" },
+        { title: "TotalJobs", data: "TotalActiveJobs", visible: false}
       ],
       createdRow: function(row, data, index){
           //console.log(data)
@@ -715,7 +717,9 @@ function MakeProjectTable()
             $('td', row).eq(0).addClass('highlightprogress'+color);
             
             var value=row.cells[0].innerText+"% 100%"
-            row.cells[0].style.backgroundSize=value
+            row.cells[0].setAttribute('value',parseFloat(data["Progress"])+'%');
+            row.cells[0].style="--td-value: "+parseFloat(data["Progress"])+'%';
+            //row.cells[0].style.backgroundSize=data["Progress"]+'% 100%';
            
             
 
@@ -727,7 +731,9 @@ function MakeProjectTable()
             //if($('td', row).eq(0).style)
              //   {
             var value=row.cells[0].innerText+"% 100%"//.value.toString()+"% 100%"
-            row.cells[0].style.backgroundSize=value //$('td', row).eq(0).value.toString()+"% 100%"
+            row.cells[0].setAttribute('value',parseFloat(data["Progress"])+'%');
+            row.cells[0].style="--td-value: "+parseFloat(data["Progress"])+'%';
+            //row.cells[0].style.backgroundSize=value //$('td', row).eq(0).value.toString()+"% 100%"
 
           }
           if(data["Tested"]==-1)
@@ -751,10 +757,12 @@ function MakeProjectTable()
           }
           else if(data["Tested"]==2)
           {
+            $('td', row).eq(3).innerHTML="Suspended"
               if($('td', row).eq(3).childNodes)
               {
                 $('td', row).eq(3).removeChild($('td', row).eq(4).childNodes[0])
               }
+              
             $('td', row).eq(3).addClass('highlightsuspended');
           
           }
@@ -769,7 +777,8 @@ function MakeProjectTable()
           }
       }
   } );
-  $('#ProjTable').dataTable().on('click','td',function (e){DisplayJobs(e,this);DisplayAttempts(e,this)});
+  
+  $('#ProjTable').dataTable().on('click','td',function (e){DisplayAttempts(e,this)});
   Ani=true;
    if(Ani)
        $('#ProjTable').addClass("do-SlideInLeft");
@@ -781,8 +790,10 @@ function MakeProjectTable()
         return;
     }
     MakeProjectTable_lock=!MakeProjectTable_lock;
+
+    //ProjTable.draw();
     ProjTable.ajax.reload(function(){MakeProjectTable_lock=!MakeProjectTable_lock}, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 2000 );
+  }, 5000 );
     
 }
 
@@ -843,7 +854,7 @@ function MakeJobsTablenew(projID)
     jobsTable.ajax.reload(null, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
   }, 2000 );
 }
-function MakeAttemptsTable(projID)
+function MakeAttemptsTable(projID,TotalActiveJobs)
   {
       thetable=document.getElementById("AttemptsTable");
     if(!thetable)
@@ -860,9 +871,11 @@ function MakeAttemptsTable(projID)
 
            attTable.id="AttemptsTable";
            attTable.className="dataTable addtable table"
-           var textnode=document.createTextNode("Attempts");
+           var textnode=document.createTextNode("Project "+String(projID)+" Details ("+String(TotalActiveJobs)+" Jobs)");
            textnode.className="table-header"
+           textnode.id="Attempts_headertxt"
            var header=document.createElement("h1");
+           header.id="Attempts_header"
            attTableCont.appendChild(document.createElement("hr"))
            header.append(textnode)
            attTableCont.appendChild(header);
@@ -876,35 +889,33 @@ function MakeAttemptsTable(projID)
         if ($.fn.dataTable.isDataTable( '#AttemptsTable' )) {
           $('#AttemptsTable').DataTable().destroy();
         }
+        document.getElementById("Attempts_header").innerHTML="Project "+String(projID)+" Details ("+String(TotalActiveJobs)+" Jobs)";
       }
 
   attemptsTable = $('#AttemptsTable').DataTable( {
       ajax: "./php/MakeTables.php?Table=Attempts&projID=" + projID,
       columns: [
-        { title: "ID" , data: "ID" },
-        { title: "Job_ID" , data: "Job_ID" },
-        { title: "Creation_Time" , data: "Creation_Time" },
+        { title: "IsActive" , data: "IsActive" },
+        { title: "RunNumber" , data: "RunNumber" },
+        { title: "FileNumber" , data: "FileNumber" },
+        { title: "NumEvts" , data: "NumEvts" },
         { title: "Start_Time" , data: "Start_Time" },
-        { title: "Completed_Time" , data: "Completed_Time" },
-        { title: "BatchSystem" , data: "BatchSystem" },
         { title: "BatchJobID" , data: "BatchJobID" },
         { title: "Status" , data: "Status" },
         { title: "ExitCode" , data: "ExitCode" },
         { title: "Failed Program" , data: "ProgramFailed" },
-        { title: "WallTime" , data: "WallTime" },
-        { title: "CPUTime" , data: "CPUTime" },
-        { title: "RAMUsed" , data: "RAMUsed" },
-        /*{ title: "RunningLocation" , data: "RunningLocation" },*/
-        { title: "RunIP" , data: "RunIP" }
+        { title: "WallTime" , data: "WallTime" }
+        
       ]
   } );
+  //document.getElementById("Attempts_header").innerHTML="Project "+String(projID)+" Details ("+attemptsTable.data("COUNT(Jobs.ID")+" Jobs)"
   if(AttemptsInterval != null)
   {
       clearInterval(AttemptsInterval)
   }
   AttemptsInterval= setInterval( function () {
     attemptsTable.ajax.reload(null, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 10000 );
+  }, 2000 );
   QueryDatabaseRunIP(projID);
 }
 
@@ -1018,7 +1029,11 @@ function DisplayAttempts(e,obj)
 {
     console.log("Attempts")
     var projID=obj.parentNode.childNodes[1].innerHTML;
-
+    var currRow=obj.closest("tr")
+    var currRowData= $('#ProjTable').DataTable().row(currRow).data();
+    var TotalActiveJobs=currRowData['TotalActiveJobs'];
+   // var activeJobs=obj.parentNode.childNodes[12].innerHTML;
+    //console.log(activeJobs)
     
         if (window.XMLHttpRequest) {
             // code for IE7+, Firefox, Chrome, Opera, Safari
@@ -1037,7 +1052,7 @@ function DisplayAttempts(e,obj)
                 result=JSON.parse(this.responseText);
                 console.log(result);
                 result_to_use=result;
-                MakeAttemptsTable(projID)
+                MakeAttemptsTable(projID,TotalActiveJobs)
                 //ColorCells();
                 }
                 
@@ -1259,6 +1274,19 @@ function GetNews()
             CSPAN.id="newsSpan_"+toString(i);
             CSPAN.innerHTML="<strong>"+newsList[i].header+"</strong>:   "+newsList[i].text+"               </span>";
             tickerHolder.appendChild(CSPAN)
+
+            if (newsList[i].type=="ALERT")
+            {
+                tickerDiv.style.backgroundColor="red"
+            }
+            else if (newsList[i].type=="INFO")
+            {
+                tickerDiv.style.backgroundColor="blue"
+            }
+            else
+            {
+                tickerDiv.style.backgroundColor="blue"
+            }
 
         }
 
