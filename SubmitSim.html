@@ -393,6 +393,36 @@ function LoopAndFill(result)
         document.getElementById("cobrems_flux").checked=true;
     }
 
+    var eBeamEOption=document.getElementById("eBeamEnergyOption")
+    if(eBeamEOption)
+    {
+        if(result.eBeamEnergy)
+        {
+            MakeSelectedByValue(document.getElementById("eBeamEnergyOption"),"Custom")
+            updateEBeamEnergy();
+            document.getElementById("eBeamE").value=parseFloat(result.eBeamEnergy).toFixed(3)
+        }
+        else
+        {
+            MakeSelectedByValue(document.getElementById("eBeamEnergyOption"),"RCDB")
+        }
+    }
+
+    var eBeamCurOption=document.getElementById("eBeamCurrentOption")
+    if(eBeamCurOption)
+    {
+        if(result.eBeamCurrent)
+        {
+            MakeSelectedByValue(document.getElementById("eBeamCurrentOption"),"Custom")
+            updateEBeamCurrent();
+            document.getElementById("eBeamI").value=parseFloat(result.eBeamCurrent).toFixed(3)
+        }
+        else
+        {
+            MakeSelectedByValue(document.getElementById("eBeamCurrentOption"),"RCDB")
+        }
+    }
+
     if(result.GenPostProcessing)
     {
         //split by colon
@@ -432,7 +462,7 @@ function LoopAndFill(result)
         MakeSelectedByValue(document.getElementById("bkg"),result.BKG)
         updateBKGoptions();
     }
-    else if(bkgarr[0]=="loc")
+    else if(bkgarr[0]=="Random loc")
     {
         MakeSelectedByValue(document.getElementById("bkg"),"Random loc:/")
         updateBKGoptions();
@@ -980,6 +1010,94 @@ function FillDefaults(beamtime){
         document.getElementById("GeantSecYes").style.visibility="visible"
     }
 
+    // ELECTRON BEAM ENERGY:
+    
+    var eBeamEOption = document.getElementById("eBeamEnergyOption")
+    MakeSelectedByValue(eBeamEOption, "RCDB")
+    updateEBeamEnergy();
+    
+    if(beamtime=="custom")
+    {
+        var ebeamlabel = document.getElementById("eBeamEnergyLabel")
+        var ebeamoption = document.getElementById("eBeamEnergyOption")
+        
+        ebeamlabel.style.visibility="initial"
+        ebeamoption.style.visibility="initial"
+        
+        // create <br> before electron beam energy field if not already there:
+        if(!document.getElementById("eBeamEnergy_br1")) {
+            var ebeam_br1 = document.createElement("BR")
+            ebeam_br1.id="eBeamEnergy_br1"
+            ebeamlabel.parentNode.insertBefore(ebeam_br1, ebeamlabel)
+        }
+        
+        // create <br> after electron beam energy field if not already there:
+        if(!document.getElementById("eBeamEnergy_br2")) {
+            var ebeam_br2 = document.createElement("BR")
+            ebeam_br2.id="eBeamEnergy_br2"
+            ebeamoption.parentNode.insertBefore(ebeam_br2, ebeamoption.nextSibling)
+        }
+    }
+    else {
+        document.getElementById("eBeamEnergyLabel").style.visibility="hidden"
+        document.getElementById("eBeamEnergyOption").style.visibility="hidden"
+        
+        // delete <br> before electron beam energy field if it exists:
+        if(document.getElementById("eBeamEnergy_br1"))
+        {
+            removeElementByID("eBeamEnergy_br1");
+        }
+        // delete <br> after electron beam energy field if it exists:
+        if(document.getElementById("eBeamEnergy_br2"))
+        {
+            removeElementByID("eBeamEnergy_br2");
+        }
+    }
+
+    // ELECTRON BEAM CURRENT:
+    
+    var eBeamCurOption = document.getElementById("eBeamCurrentOption")
+    MakeSelectedByValue(eBeamCurOption, "RCDB")
+    updateEBeamCurrent();
+    
+    if(beamtime=="custom")
+    {
+        var ecurlabel = document.getElementById("eBeamCurrentLabel")
+        var ecuroption = document.getElementById("eBeamCurrentOption")
+        
+        ecurlabel.style.visibility="initial"
+        ecuroption.style.visibility="initial"
+        
+        // create <br> before electron beam energy field if not already there:
+        if(!document.getElementById("eBeamCurrent_br1")) {
+            var ecur_br1 = document.createElement("BR")
+            ecur_br1.id="eBeamCurrent_br1"
+            ecurlabel.parentNode.insertBefore(ecur_br1, ecurlabel)
+        }
+        
+        // create <br> after electron beam energy field if not already there:
+        if(!document.getElementById("eBeamCurrent_br2")) {
+            var ecur_br2 = document.createElement("BR")
+            ecur_br2.id="eBeamCurrent_br2"
+            ecuroption.parentNode.insertBefore(ecur_br2, ecuroption.nextSibling)
+        }
+    }
+    else {
+        document.getElementById("eBeamCurrentLabel").style.visibility="hidden"
+        document.getElementById("eBeamCurrentOption").style.visibility="hidden"
+        
+        // delete <br> before electron beam energy field if it exists:
+        if(document.getElementById("eBeamCurrent_br1"))
+        {
+            removeElementByID("eBeamCurrent_br1");
+        }
+        // delete <br> after electron beam energy field if it exists:
+        if(document.getElementById("eBeamCurrent_br2"))
+        {
+            removeElementByID("eBeamCurrent_br2");
+        }
+    }
+
     //BACKGROUNDS
     var bkgselect = document.getElementById("bkg")
     if(beamtime=="custom")
@@ -1285,6 +1403,56 @@ function MakeGluexForm()
     form.appendChild(document.createElement("BR"))
     //form.appendChild(document.createElement("BR"))
 
+    // ELECTRON BEAM ENERGY
+    
+    var eBeamEnergyLabel=document.createElement("LABEL");
+    eBeamEnergyLabel.setAttribute("for", "eBeamEnergyOption");
+    eBeamEnergyLabel.id="eBeamEnergyLabel"
+    eBeamEnergyLabel.appendChild(document.createTextNode("Electron Beam Energy:"))
+    form.appendChild(eBeamEnergyLabel)
+    
+    var eBeamEnergySelect=document.createElement("SELECT")
+    eBeamEnergySelect.id="eBeamEnergyOption"
+    eBeamEnergySelect.name="eBeamEnergyOption"
+    eBeamEnergySelect.setAttribute("onchange","updateEBeamEnergy();MakeCheckButton();");
+    form.appendChild(eBeamEnergySelect)
+    
+    populateEBeamEnergy("GlueX")
+    
+    var ebeam_br1 = document.createElement("BR")
+    ebeam_br1.id="eBeamEnergy_br1"
+    eBeamEnergyLabel.parentNode.insertBefore(ebeam_br1, eBeamEnergyLabel)
+    
+    var ebeam_br2 = document.createElement("BR")
+    ebeam_br2.id="eBeamEnergy_br2"
+    eBeamEnergySelect.parentNode.insertBefore(ebeam_br2, eBeamEnergySelect.nextSibling)
+
+    // ELECTRON BEAM CURRENT
+    
+    var eBeamCurrentLabel=document.createElement("LABEL");
+    eBeamCurrentLabel.setAttribute("for", "eBeamCurrentOption");
+    eBeamCurrentLabel.id="eBeamCurrentLabel"
+    eBeamCurrentLabel.appendChild(document.createTextNode("Electron Beam Current:"))
+    form.appendChild(eBeamCurrentLabel)
+    
+    var eBeamCurrentSelect=document.createElement("SELECT")
+    eBeamCurrentSelect.id="eBeamCurrentOption"
+    eBeamCurrentSelect.name="eBeamCurrentOption"
+    eBeamCurrentSelect.setAttribute("onchange","updateEBeamCurrent();MakeCheckButton();");
+    form.appendChild(eBeamCurrentSelect)
+    
+    populateEBeamCurrent("GlueX")
+    
+    form.appendChild(document.createElement("BR"))
+    
+    var ecur_br1 = document.createElement("BR")
+    ecur_br1.id="eBeamCurrent_br1"
+    eBeamCurrentLabel.parentNode.insertBefore(ecur_br1, eBeamCurrentLabel)
+    
+    var ecur_br2 = document.createElement("BR")
+    ecur_br2.id="eBeamCurrent_br2"
+    eBeamCurrentSelect.parentNode.insertBefore(ecur_br2, eBeamCurrentSelect.nextSibling)
+
     //GENERATOR POST-PROCESSING
     var genpostlabel=document.createElement("LABEL");
     genpostlabel.setAttribute("for", "GenPost");
@@ -1445,6 +1613,9 @@ function MakeGluexForm()
     form.appendChild(rrecon);
     form.appendChild(document.createTextNode("Run Reconstruction"))
 
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createTextNode(" The following flags affect only .hddm files. Thrown trees are always saved."))
     form.appendChild(document.createElement("BR"))
 
     var sgen=document.createElement("INPUT");
@@ -1857,6 +2028,9 @@ function MakeJEFForm()
     form.appendChild(document.createTextNode("Run Reconstruction"))
 
     form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createTextNode(" The following flags affect only .hddm files. Thrown trees are always saved."))
+    form.appendChild(document.createElement("BR"))
 
     var sgen=document.createElement("INPUT");
     sgen.type="checkbox"
@@ -2240,6 +2414,9 @@ function MakeCPPForm()
     form.appendChild(rrecon);
     form.appendChild(document.createTextNode("Run Reconstruction"))
 
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createTextNode(" The following flags affect only .hddm files. Thrown trees are always saved."))
     form.appendChild(document.createElement("BR"))
 
     var sgen=document.createElement("INPUT");
@@ -2675,6 +2852,90 @@ function addANAselector()
 
     }
 }
+
+function populateEBeamEnergy(exp)
+{
+    var eBeamEnergySelect=document.getElementById("eBeamEnergyOption");
+    var eBeamEnergySelect_options=["RCDB","Custom"]
+    eBeamEnergySelect_options.forEach(function(element) {
+        var sel=false;
+        if(element=="RCDB")
+        {
+            sel=true;
+        }
+        MakeOption(eBeamEnergySelect,element,sel)
+    });
+}
+function updateEBeamEnergy()
+{
+    var sel=document.getElementById("eBeamEnergyOption");
+    var sel_val=document.getElementById("eBeamEnergyOption").value;
+    
+    if(sel_val==="Custom")
+    {
+        var eBeamEnergy=document.createElement("INPUT")
+        eBeamEnergy.type="number"
+        eBeamEnergy.step="0.001"
+        eBeamEnergy.id="eBeamE"
+        eBeamEnergy.name="eBeamE"
+        eBeamEnergy.placeholder="11.7 [GeV]"
+        eBeamEnergy.required=true;
+        eBeamEnergy.title="Electron beam energy to simulate."
+        eBeamEnergy.style.width="24%";
+        //form.appendChild(eBeamEnergy);
+        
+        sel.parentNode.insertBefore(eBeamEnergy,sel.nextSibling)
+    }
+    else if(sel_val=="RCDB")
+    {
+        if(document.getElementById("eBeamE"))
+        {
+            removeElementByID("eBeamE");
+        }
+    }
+}
+
+function populateEBeamCurrent(exp)
+{
+    var eBeamCurrentSelect=document.getElementById("eBeamCurrentOption");
+    var eBeamCurrentSelect_options=["RCDB","Custom"]
+    eBeamCurrentSelect_options.forEach(function(element) {
+        var sel=false;
+        if(element=="RCDB")
+        {
+            sel=true;
+        }
+        MakeOption(eBeamCurrentSelect,element,sel)
+    });
+}
+function updateEBeamCurrent()
+{
+    var sel=document.getElementById("eBeamCurrentOption");
+    var sel_val=document.getElementById("eBeamCurrentOption").value;
+    
+    if(sel_val==="Custom")
+    {
+        var eBeamCurrent=document.createElement("INPUT")
+        eBeamCurrent.type="number"
+        eBeamCurrent.step="0.001"
+        eBeamCurrent.id="eBeamI"
+        eBeamCurrent.name="eBeamI"
+        eBeamCurrent.placeholder="0.3 [uA]"
+        eBeamCurrent.required=true;
+        eBeamCurrent.title="Electron beam current to simulate (in microamps)."
+        eBeamCurrent.style.width="24%";
+        
+        sel.parentNode.insertBefore(eBeamCurrent,sel.nextSibling)
+    }
+    else if(sel_val=="RCDB")
+    {
+        if(document.getElementById("eBeamI"))
+        {
+            removeElementByID("eBeamI");
+        }
+    }
+}
+
 function updateGenPost()
 {
     

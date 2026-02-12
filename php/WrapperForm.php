@@ -45,50 +45,62 @@ function UpdateProject($conn)
     $coherent=NULL;
 
     if( isset($_GET["cohPos"]) )
-        {
-            $coherent=$_GET["cohPos"];
-        }
+    {
+        $coherent=$_GET["cohPos"];
+    }
 
-        if ( isset($_GET["GeantSecondaries"]) )
-        {
-            $geant_secondaries = 1;
-        }
+    if ( isset($_GET["GeantSecondaries"]) )
+    {
+        $geant_secondaries = 1;
+    }
 
-        if ( isset($_GET["RunGeneration"]) )
-        {
-            $rungen = 1;
-        }
-        if ( isset($_GET["SaveGeneration"]) )
-        {
-            $savegen = 1;
-        }
+    if ( isset($_GET["RunGeneration"]) )
+    {
+        $rungen = 1;
+    }
+    if ( isset($_GET["SaveGeneration"]) )
+    {
+        $savegen = 1;
+    }
 
-        if ( isset($_GET["RunGeant"]) )
-        {
-            $rungeant = 1;
-        }
-        if ( isset($_GET["SaveGeant"]) )
-        {
-            $savegeant = 1;
-        }
+    if ( isset($_GET["RunGeant"]) )
+    {
+        $rungeant = 1;
+    }
+    if ( isset($_GET["SaveGeant"]) )
+    {
+        $savegeant = 1;
+    }
 
-        if ( isset($_GET["RunSmear"] ) )
-        {
-            $runsmear = 1;
-        }
-        if ( isset($_GET["SaveSmear"] ) )
-        {
-            $savesmear = 1;
-        }
+    if ( isset($_GET["RunSmear"] ) )
+    {
+        $runsmear = 1;
+    }
+    if ( isset($_GET["SaveSmear"] ) )
+    {
+        $savesmear = 1;
+    }
 
-        if ( isset($_GET["RunRecon"]) )
-        {
-            $runrecon = 1;
-        }
-        if ( isset($_GET["SaveRecon"]) )
-        {
-            $saverecon = 1;
-        }
+    if ( isset($_GET["RunRecon"]) )
+    {
+        $runrecon = 1;
+    }
+    if ( isset($_GET["SaveRecon"]) )
+    {
+        $saverecon = 1;
+    }
+
+    $eBeamE=NULL;
+    if ( isset($_GET["eBeamE"]) )
+    {
+        $eBeamE = $_GET["eBeamE"];
+    }
+
+    $eBeamI=NULL;
+    if ( isset($_GET["eBeamI"]) )
+    {
+        $eBeamI = $_GET["eBeamI"];
+    }
 
     $msg = $_GET["username"] . ", I received your request to update your Monte Carlo project on " . $dateNOW . " at " . $timeNOW . "\n";
     #echo $msg;
@@ -203,16 +215,17 @@ function UpdateProject($conn)
        . ", RunReconstruction=?, SaveReconstruction=?, Generator=?, Generator_Config=? " . ", BKG=? " 
        . ", Comments=?, GenMinE=?, GenMaxE=?,GeantSecondaries=?,VersionSet=? "
        . ", ReactionLines=? " . ", RCDBQuery=?, CoherentPeak=?, Tested=0, GenFlux=? "
+       . ", eBeamEnergy=?, eBeamCurrent=? "
        . ", ANAVersionSet=?,GenPostProcessing=?" . " WHERE ID=?";
 
     $stmt = $conn->prepare($sql);
-  
-    $stmt->bind_param("iiiiiiiiiiiissssddisssdsssi", 
+
+    $stmt->bind_param("iiiiiiiiiiiissssddisssdsddssi", 
     $runlow, $runhigh, $_GET["numevents"], $_GET["Geantver"], $rungen,
     $savegen, $rungeant, $savegeant, $runsmear, $savesmear, 
     $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"], $bkg, 
     $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"], $geant_secondaries, $_GET["versionSet"], 
-    $RL, $rcdb_query, $coherent,$_GET["Genflux"],$anaVerSet, $genpost_str,
+    $RL, $rcdb_query, $coherent,$_GET["Genflux"],$eBeamE,$eBeamI,$anaVerSet, $genpost_str,
     $_GET["prefill"]); 
 
       //echo $sql;
@@ -374,6 +387,17 @@ function InsertProject($conn)
             $saverecon = 1;
         }
 
+        $eBeamE=NULL;
+        if ( isset($_GET["eBeamE"]) )
+        {
+            $eBeamE = $_GET["eBeamE"];
+        }
+
+        $eBeamI=NULL;
+        if ( isset($_GET["eBeamI"]) )
+        {
+            $eBeamI = $_GET["eBeamI"];
+        }
 
         $msg = $_GET["username"] . ", I received your request for Monte Carlo on " . $dateNOW . " at " . $timeNOW . "\n";
         #echo $msg;
@@ -508,23 +532,29 @@ function InsertProject($conn)
                                  . " NumEvents, GeantVersion, OutputLocation, Submit_Time, RunGeneration, "
                                  . " SaveGeneration, RunGeant, SaveGeant, RunSmear, SaveSmear, "
                                  . " RunReconstruction, SaveReconstruction, Generator, Generator_Config, Config_Stub, "
-                                 . " BKG, Comments, GenMinE, GenMaxE,GeantSecondaries, "
-                                 . " VersionSet,UName,UIp,ReactionLines,RCDBQuery, "
-                                 . " CoherentPeak, wc,GenFlux,ANAVersionSet ,GenPostProcessing,user_id)"
-                                 . " VALUES (?, ?,?,'0', ?, ?, "
+                                 . " BKG, Comments, GenMinE, GenMaxE, GeantSecondaries, "
+                                 . " VersionSet, UName, UIp, ReactionLines, RCDBQuery, "
+                                 . " CoherentPeak, wc, GenFlux, eBeamEnergy, eBeamCurrent, "
+                                 . " ANAVersionSet, GenPostProcessing, user_id)"
+                                 . " VALUES (?, ?, ?, '0', ?, ?, "
                                  . " ?, ?, ?, now(), ?, "
                                  . " ?, ?, ?, ?, ?, "
                                  . " ?, ?, ?, ?, ?, "
-                                 . " ?, ?,?,?,?,"
-                                 . " ?,?,?,?,?,"
-                                 . " ?,?,?,?,?,?)";
+                                 . " ?, ?, ?, ?, ?, "
+                                 . " ?, ?, ?, ?, ?, "
+                                 . " ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         //sssiii
         //iis
-        $stmt->bind_param("sssiiiisiiiiiiiisssssddisssssddsssi", $_GET["username"], $_GET["useremail"], $_GET["exp"],$runlow, $runhigh, $_GET["numevents"],
-                  $_GET["Geantver"], $fullOutput, $rungen, $savegen, $rungeant,
-                  $savegeant, $runsmear, $savesmear, $runrecon, $saverecon,
-                  $_GET["generator"], $_GET["generator_config"], $configstub, $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"],$geant_secondaries,$VerSet,$_SERVER['PHP_AUTH_USER'],$_SERVER['REMOTE_ADDR'],$RL,$rcdb_query,$coherent,$_GET["spend"],$_GET["Genflux"],$anaVerSet,$genpost_str,$user_id);
+        $stmt->bind_param("sssiiiisiiiiiiiisssssddisssssddsddssi", 
+                    $_GET["username"], $_GET["useremail"], $_GET["exp"], $runlow, $runhigh, 
+                    $_GET["numevents"], $_GET["Geantver"], $fullOutput, $rungen, 
+                    $savegen, $rungeant, $savegeant, $runsmear, $savesmear, 
+                    $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"], $configstub, 
+                    $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"], $geant_secondaries, 
+                    $VerSet, $_SERVER['PHP_AUTH_USER'], $_SERVER['REMOTE_ADDR'], $RL, $rcdb_query, 
+                    $coherent, $_GET["spend"], $_GET["Genflux"], $eBeamE, $eBeamI, 
+                    $anaVerSet, $genpost_str, $user_id);
 
         //echo $sql;
         //echo "<br>";
