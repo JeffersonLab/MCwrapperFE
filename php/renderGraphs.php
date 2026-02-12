@@ -7,7 +7,8 @@ $now = round(microtime(true) * 1000);
 $then =$now-$lookback*60*60*1000;
 
 $url="https://scigraf.jlab.org/render/d-solo/_nf73ziVk/condor-by-host?orgId=1&var-node=scosg2201&from=".$then."&to=".$now."&theme=light&panelId=9&width=1000&height=500&tz=America%2FNew_York";
-#echo $url;
+#$url="https://scigraf.jlab.org/d/_nf73ziVk/condor-by-host?orgId=1&from=".$then."&to=".$now."&theme=dark&viewPanel=9";
+#echo $url; https://scigraf.jlab.org/d/_nf73ziVk/condor-by-host?orgId=1&from=1729173097810&to=1729259497810&theme=dark&viewPanel=9
 #echo "<br><br>";
 
 #curl image from url with token in header

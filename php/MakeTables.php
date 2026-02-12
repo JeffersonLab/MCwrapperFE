@@ -24,7 +24,7 @@ if($_GET["Table"]=="Attempts")
     //$sql="SELECT * FROM Attempts WHERE Job_ID IN (SELECT ID FROM Jobs WHERE Project_ID=" . $_GET["projID"] . ") GROUP BY Job_ID;";
     //$sql="SELECT * FROM Attempts WHERE ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=" . $_GET["projID"] . ");";
 //    $sql="SELECT Attempts.*,Max(Attempts.Creation_Time) FROM Attempts,Jobs WHERE Attempts.Job_ID = Jobs.ID && Jobs.Project_ID=" . $_GET["projID"] . " GROUP BY Attempts.Job_ID;";
-      $sql="select Attempts.*, Jobs.IsActive, Jobs.RunNumber, Jobs.NumEvts, Jobs.FileNumber
+      $sql="select Attempts.*, Jobs.IsActive, Jobs.RunNumber, Jobs.NumEvts, Jobs.FileNumber, Jobs.DataVerified 
       from Jobs
       inner join Attempts on Attempts.Job_ID = Jobs.id and Attempts.id = (select max(id) from Attempts latest_attempts where latest_attempts.job_id = Jobs.id)
       where Project_ID = " . $_GET["projID"] . " ORDER BY IsActive desc";

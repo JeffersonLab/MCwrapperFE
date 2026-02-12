@@ -47,7 +47,7 @@ function DeclareComplete($conn)
     if( $_SERVER['PHP_AUTH_USER'] == $urow["UName"])
     {
         //echo "<br> InTestReset()<br>";
-        $sql = "UPDATE Project Set Tested=4 WHERE ID=" . $_GET["projID"];
+        $sql = "UPDATE Project Set Tested=4, Completed_Time=NOW() WHERE ID=" . $_GET["projID"];
         //echo $sql . "<br>";
 
         $result = $conn->query($sql);

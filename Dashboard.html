@@ -115,11 +115,11 @@
             news_lock=!news_lock
             GetNews();
             
-        },5000)
+        },30000)
 
         setInterval(function (){
             GetHeartbeats();
-        },5000)
+        },30000)
         
         $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php()}); 
 
@@ -405,7 +405,7 @@ function GetHeartbeats()
                     LastSubmit(hist_table.LastSub[0]);
                     
                     //DO MOVER
-                    StatusLight("MCMover-hb",hist_table.MCMover,2);
+                    //StatusLight("MCMover-hb",hist_table.MCMover,2);
                     
 
                 }
@@ -744,6 +744,7 @@ function MakeProjectTable()
                 $('td', row).eq(3).removeChild($('td', row).eq(4).childNodes[0])
               }
             $('td', row).eq(3).addClass('highlighttestfail');
+            $('td', row).eq(3).attr('title', 'Test failed');
           }
           else if(data["Tested"]==1)
           {
@@ -753,7 +754,7 @@ function MakeProjectTable()
                 $('td', row).eq(3).removeChild($('td', row).eq(4).childNodes[0])
               }
             $('td', row).eq(3).addClass('highlighttestpass');
-          
+            $('td', row).eq(3).attr('title', 'Running');
           }
           else if(data["Tested"]==2)
           {
@@ -764,6 +765,7 @@ function MakeProjectTable()
               }
               
             $('td', row).eq(3).addClass('highlightsuspended');
+            $('td', row).eq(3).attr('title', 'Project Suspended');
           
           }
           else if(data["Tested"]==0)
@@ -773,6 +775,55 @@ function MakeProjectTable()
             ($('td', row).eq(4)).appendChild(loadDiv)*/
             
             $('td', row).eq(3).addClass('hightlighttesting');
+            $('td', row).eq(3).attr('title', 'Testing');
+          
+          }
+          else if(data["Tested"]==20)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Waiting to bundle');
+          
+          }
+          else if(data["Tested"]==21)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Currently bundling');
+          
+          }
+          else if(data["Tested"]==40)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Declared complete; Waiting to bundle');
+          
+          }
+          else if(data["Tested"]==41)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Declared complete; Bundling');
+          
+          }
+          else if(data["Tested"]==100 || data["Tested"]==400)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Finished bundling. Waiting to clear.');
+          
+          }
+          else if(data["Tested"]==4 )
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Declared complete');
           
           }
       }
@@ -793,7 +844,7 @@ function MakeProjectTable()
 
     //ProjTable.draw();
     ProjTable.ajax.reload(function(){MakeProjectTable_lock=!MakeProjectTable_lock}, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 5000 );
+  }, 20000 );
     
 }
 
@@ -852,7 +903,7 @@ function MakeJobsTablenew(projID)
   }
   JobsInterval=setInterval( function () {
     jobsTable.ajax.reload(null, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 2000 );
+  }, 5000 );
 }
 function MakeAttemptsTable(projID,TotalActiveJobs)
   {
@@ -904,7 +955,8 @@ function MakeAttemptsTable(projID,TotalActiveJobs)
         { title: "Status" , data: "Status" },
         { title: "ExitCode" , data: "ExitCode" },
         { title: "Failed Program" , data: "ProgramFailed" },
-        { title: "WallTime" , data: "WallTime" }
+        { title: "WallTime" , data: "WallTime" },
+        { title: "DataVerified?", data: "DataVerified"}
         
       ]
   } );
@@ -915,7 +967,7 @@ function MakeAttemptsTable(projID,TotalActiveJobs)
   }
   AttemptsInterval= setInterval( function () {
     attemptsTable.ajax.reload(null, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 2000 );
+  }, 5000 );
   QueryDatabaseRunIP(projID);
 }
 
@@ -1430,14 +1482,14 @@ function GetNews()
                 </div>
                 <br>
                 <hr>
-            <div class="container">
+            <!--<div class="container">
                     <div class="led-box">
                         <div class="led-green" id="MCMover-hb">
                                 
                         </div>
                         <p>Data Mover</p>
                     </div>
-                </div>
+                </div>-->
 </div>
 </div>
 </div>
