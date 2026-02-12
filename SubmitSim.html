@@ -736,7 +736,6 @@ function MakeGlueXBeamTimeSelector()
     selLabel.appendChild(document.createTextNode("Beam time"))
     form.appendChild(selLabel)
 
-    
     var in20170103 = document.createElement("input")
     in20170103.setAttribute("type","radio")
     in20170103.setAttribute("id","in20170103")
@@ -748,6 +747,7 @@ function MakeGlueXBeamTimeSelector()
     label20170103.setAttribute("for", "in20170103");
     label20170103.appendChild(document.createTextNode("2017-01 (ver03)"))
     form.appendChild(label20170103)
+
     var in20170104 = document.createElement("input")
     in20170104.setAttribute("type","radio")
     in20170104.setAttribute("id","in20170104")
@@ -759,6 +759,19 @@ function MakeGlueXBeamTimeSelector()
     label20170104.setAttribute("for", "in20170104");
     label20170104.appendChild(document.createTextNode("2017-01 (ver04)"))
     form.appendChild(label20170104)
+
+    var in20170105 = document.createElement("input")
+    in20170105.setAttribute("type","radio")
+    in20170105.setAttribute("id","in20170105")
+    in20170105.setAttribute("name","btsel")
+    in20170105.setAttribute("value","2017_01-ver05")
+    in20170105.setAttribute("onclick","FillDefaults('2017_01-ver05');")
+    form.appendChild(in20170105)
+    var label20170105=document.createElement("LABEL");
+    label20170105.setAttribute("for", "in20170105");
+    label20170105.appendChild(document.createTextNode("2017-01 (ver05)"))
+    form.appendChild(label20170105)
+
     var in201801 = document.createElement("input")
     in201801.setAttribute("type","radio")
     in201801.setAttribute("id","in201801")
@@ -770,6 +783,7 @@ function MakeGlueXBeamTimeSelector()
     label201801.setAttribute("for", "in201801");
     label201801.appendChild(document.createTextNode("2018-01"))
     form.appendChild(label201801)
+
     var in201808 = document.createElement("input")
     in201808.setAttribute("type","radio")
     in201808.setAttribute("id","in201808")
@@ -781,6 +795,7 @@ function MakeGlueXBeamTimeSelector()
     label201808.setAttribute("for", "in201808");
     label201808.appendChild(document.createTextNode("2018-08"))
     form.appendChild(label201808)
+
     var in201808lowE = document.createElement("input")
     in201808lowE.setAttribute("type","radio")
     in201808lowE.setAttribute("id","in201808lowE")
@@ -792,6 +807,7 @@ function MakeGlueXBeamTimeSelector()
     label201808lowE.setAttribute("for", "in201808lowE");
     label201808lowE.appendChild(document.createTextNode("2018-08 lowE"))
     form.appendChild(label201808lowE)
+
     var in201911 = document.createElement("input")
     in201911.setAttribute("type","radio")
     in201911.setAttribute("id","in201911")
@@ -803,6 +819,7 @@ function MakeGlueXBeamTimeSelector()
     label201911.setAttribute("for", "in201911");
     label201911.appendChild(document.createTextNode("2019-11"))
     form.appendChild(label201911)
+
     var inCustom = document.createElement("input")
     inCustom.setAttribute("type","radio")
     inCustom.setAttribute("id","inCustom")
@@ -823,6 +840,13 @@ function FillDefaults(beamtime){
     var reconver = document.getElementById("recon_stack")
     for(var i = 0; i < reconver.length; i++){
         if(reconver[i].value.startsWith("recon-"+beamtime)){
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if(beamtime=="2017_01-ver05" && reconver[i].value.startsWith("5.8.1")){
+            // There was no halld_recon build called 'recon-2017_01-ver05'.
+            // Instead, this data production campaign used halld_recon version 5.8.1 and the version_7.2.0.xml. 
+            // Within the halld_versions directory, recon-2017_01-ver05.xml is symlink to version_7.2.0.xml.
             MakeSelectedByValue(reconver,reconver[i].value)
             break
         }
@@ -883,6 +907,17 @@ function FillDefaults(beamtime){
 
                     MakeSelectedByValue(document.getElementById("verSet"),project.VersionSet)
                     }
+                    // by default, select the recon-2017_01-ver05.xml version set instead of the version_7.2.0.xml version set.
+                    // They are identical, but the naming of the convention of the former makes it more clear to users.
+                    if(beamtime=="2017_01-ver05"){
+                        var verset = document.getElementById("verSet")
+                        for(var i = 0; i < verset.length; i++){
+                            if(verset[i].value.startsWith("recon-2017_01-ver05")){
+                                MakeSelectedByValue(verset,verset[i].value)
+                                break
+                            }
+                        }
+                    }
                     //special case since 2017_01-ver04 is same reco as 2019_11-ver01 but has different version set
                     //can easily be generalised if more such cases arise
                     if(beamtime=="2017_01-ver04"){
@@ -942,6 +977,7 @@ function FillDefaults(beamtime){
         var runmax = document.getElementById("maxRunNum")
         beamtime == "2017_01-ver03" ? runmin.value=30274
         : beamtime == "2017_01-ver04" ? runmin.value=30274
+        : beamtime == "2017_01-ver05" ? runmin.value=30274
         : beamtime == "2018_01-ver02" ? runmin.value=40856
         : beamtime == "2018_08-ver02" ? runmin.value=50677
         : beamtime == "lowE" ? runmin.value=51384
@@ -949,6 +985,7 @@ function FillDefaults(beamtime){
         : runmin.value=""
         beamtime == "2017_01-ver03" ? runmax.value=31057
         : beamtime == "2017_01-ver04" ? runmax.value=31057
+        : beamtime == "2017_01-ver05" ? runmax.value=31057
         : beamtime == "2018_01-ver02" ? runmax.value=42577
         : beamtime == "2018_08-ver02" ? runmax.value=51768
         : beamtime == "lowE" ? runmax.value=51457
@@ -961,6 +998,7 @@ function FillDefaults(beamtime){
             var rcdbquery = document.getElementById("rcdbq")
             beamtime == "2017_01-ver03" ?  rcdbquery.value="@is_production and @status_approved"
             : beamtime == "2017_01-ver04" ?  rcdbquery.value="@is_production and @status_approved"
+            : beamtime == "2017_01-ver05" ?  rcdbquery.value="@is_production and @status_approved"
             : beamtime == "2018_01-ver02" ?  rcdbquery.value="@is_2018production and @status_approved"
             : beamtime == "2018_08-ver02" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current>49"
             : beamtime == "lowE" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current<49"
@@ -1113,6 +1151,7 @@ function FillDefaults(beamtime){
         var rndtag = document.getElementById("randomtag")
         beamtime == "2017_01-ver03" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
         : beamtime == "2017_01-ver04" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+        : beamtime == "2017_01-ver05" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
         : beamtime == "2018_01-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_01-ver02.2")
         : beamtime == "2018_08-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
         : beamtime == "lowE" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
@@ -2760,17 +2799,17 @@ function populateGenerators(exp)
     if(exp=="CPP")
     {
         defgen="gen_2pi_primakoff"
-        Gens=["genr8","bggen","gen_2pi_amp","gen_2pi_primakoff","gen_pi0","particle_gun","gen_amp","gen_omegapi"]//,"file:"]
+        Gens=["genr8","bggen","gen_2pi_amp","gen_2pi_primakoff","gen_pi0","particle_gun","gen_amp","gen_amp_V2","gen_omegapi"]//,"file:"]
     }
     else if(exp=="JEF")
     {
         defgen="genEtaRegge"
-        Gens=["genr8","bggen","gen_amp","genEtaRegge"]//,"file:"]
+        Gens=["genr8","bggen","gen_amp","gen_amp_V2","genEtaRegge"]//,"file:"]
     }
     else
     {
         defgen="bggen"
-        Gens = ["genr8","bggen","genEtaRegge","gen_2pi_primakoff","gen_pi0","bggen_jpsi","bggen_upd","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_amp","gen_omegapi","mc_gen","geantBEAM","gen_vec_ps"]//,"file:"]
+        Gens = ["genr8","bggen","genEtaRegge","gen_2pi_primakoff","gen_pi0","bggen_jpsi","bggen_upd","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_amp","gen_amp_V2","gen_omegapi","mc_gen","geantBEAM","gen_vec_ps","python","gen_primex_eta_he4","gen_generic_root"]//,"file:"]
         //Gens = ["genr8","bggen","genEtaRegge","gen_2pi_amp","gen_2pi_primakoff","gen_pi0","gen_omega_3pi","gen_2k","bggen_jpsi","bggen_upd","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_omega_radiative","gen_amp","file:"]
     }
 
@@ -3017,7 +3056,7 @@ function updateBKGoptions()
             document.getElementById("randomtag").replaceWith(randomtag)
 
             document.getElementById("randomtag").style.width="38%"
-            randtags=["recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01","recon-2019_11-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
+            randtags=["recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01.2","recon-2019_11-ver01","recon-2021_08-ver01","recon-2021_11-ver01", "recon-2022_08-ver01", "workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
 
             randtags.forEach(function(element) {
                 halld_reconVer=document.getElementById("recon_stack")
