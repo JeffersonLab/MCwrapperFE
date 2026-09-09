@@ -15,7 +15,7 @@ if ( isset($_GET["projID"]) && $_GET["Table"]=="Jobs")
 if($_GET["Table"]=="ProjectF")
 {
     //$sql="SELECT * FROM Attempts WHERE Job_ID IN (SELECT ID FROM Jobs WHERE Project_ID=" . $_GET["projID"] . ") GROUP BY Job_ID;";
-    $sql="SELECT ID,Email,Submit_Time,Tested,Is_Dispatched,Dispatched_Time,Completed_Time,RunNumLow,RunNumHigh,NumEvents,Generator,BKG,OutputLocation,RCDBQuery,VersionSet,ANAVersionSet,UIp FROM Project where Notified IS NULL";
+    $sql="SELECT ID,Email,Submit_Time,Tested,Is_Dispatched,Dispatched_Time,Completed_Time,RunNumLow,RunNumHigh,NumEvents,Generator,BKG,OutputLocation,RCDBQuery,VersionSet,SimVersionSet,ANAVersionSet,UIp FROM Project where Notified IS NULL";
 //    $sql="SELECT Attempts.*,Max(Attempts.Creation_Time) FROM Attempts,Jobs WHERE Attempts.Job_ID = Jobs.ID && Jobs.Project_ID=" . $_GET["projID"] . " GROUP BY Attempts.Job_ID;";
 }
 
@@ -24,7 +24,7 @@ if($_GET["Table"]=="Attempts")
     //$sql="SELECT * FROM Attempts WHERE Job_ID IN (SELECT ID FROM Jobs WHERE Project_ID=" . $_GET["projID"] . ") GROUP BY Job_ID;";
     //$sql="SELECT * FROM Attempts WHERE ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=" . $_GET["projID"] . ");";
 //    $sql="SELECT Attempts.*,Max(Attempts.Creation_Time) FROM Attempts,Jobs WHERE Attempts.Job_ID = Jobs.ID && Jobs.Project_ID=" . $_GET["projID"] . " GROUP BY Attempts.Job_ID;";
-      $sql="select Attempts.*, Jobs.IsActive, Jobs.RunNumber, Jobs.NumEvts, Jobs.FileNumber
+      $sql="select Attempts.*, Jobs.IsActive, Jobs.RunNumber, Jobs.NumEvts, Jobs.FileNumber, Jobs.DataVerified 
       from Jobs
       inner join Attempts on Attempts.Job_ID = Jobs.id and Attempts.id = (select max(id) from Attempts latest_attempts where latest_attempts.job_id = Jobs.id)
       where Project_ID = " . $_GET["projID"] . " ORDER BY IsActive desc";
@@ -38,9 +38,17 @@ if($_GET["Table"]=="Ticker")
 }
 if($_GET["Table"]=="RunMap")
 {
-    $sql="SELECT RunIP FROM Attempts WHERE RunIP is NOT NULL && BatchSystem=\"OSG\" && Job_ID in (SELECT ID From Jobs where Project_ID=". $_GET["projID"] . ");";
-    //$sql="SELECT RunIP FROM Attempts WHERE RunIP is NOT NULL && BatchSystem=\"OSG\";";
-//    $sql="SELECT Attempts.*,Max(Attempts.Creation_Time) FROM Attempts,Jobs WHERE Attempts.Job_ID = Jobs.ID && Jobs.Project_ID=" . $_GET["projID"] . " GROUP BY Attempts.Job_ID;";
+    // Only the most recent attempt per job for this project
+    $projID = intval($_GET["projID"]);
+    $sql="SELECT DISTINCT a.RunIP FROM Attempts a
+          INNER JOIN (
+              SELECT Job_ID, MAX(Creation_Time) AS latest
+              FROM Attempts
+              WHERE RunIP IS NOT NULL AND BatchSystem='OSG'
+              GROUP BY Job_ID
+          ) latest_a ON a.Job_ID = latest_a.Job_ID AND a.Creation_Time = latest_a.latest
+          WHERE a.RunIP IS NOT NULL AND a.BatchSystem='OSG'
+          AND a.Job_ID IN (SELECT ID FROM Jobs WHERE Project_ID=$projID);";
 }
 
 //WITH V1 AS ( SELECT P.ID as PROJ_ID, J.ID as JOB_ID, A.Creation_Time as TIME_STAMP FROM Attempts A JOIN Jobs J ON A.Job_ID = J.ID JOIN PROJECTS P ON P.ID = J.Project_ID ) , V2 AS ( SELECT V1.JOB_ID, MAX(V1.TIME_STAMP) AS CURR_ATTEMPT FROM V1 GROUP BY JOB_ID ) , V3 AS ( SELECT V1.PROJ_ID, V1.JOB_ID, V1.TIME_STAMP FROM V1 JOIN V2 ON V1.TIME_STAMP = V2.CURR_ATTEMPT ) SELECT * FROM V1 WHERE PROJ_ID = 72;

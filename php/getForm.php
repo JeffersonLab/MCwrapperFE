@@ -32,7 +32,7 @@ $recon = $reconresult->fetch_assoc();
 //print_r($recon);
 $data[0]["recon_ver"]=$recon["version"];
 
-$vssimq="select version from version where packageId in (SELECT id from package where name=\"halld_sim\") && versionSetId in (SELECT id from versionSet where filename=\"" . $data[0]['VersionSet'] . "\");";
+$vssimq="select version from version where packageId in (SELECT id from package where name=\"halld_sim\") && versionSetId in (SELECT id from versionSet where filename=\"" . $data[0]['SimVersionSet'] . "\");";
 $simresult = $conn_vs->query($vssimq);
 $sim = $simresult->fetch_assoc();
 //print_r($recon);

@@ -115,13 +115,13 @@
             news_lock=!news_lock
             GetNews();
             
-        },5000)
+        },30000)
 
         setInterval(function (){
             GetHeartbeats();
-        },5000)
+        },30000)
         
-        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php()}); 
+        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php();InitGlobe()}); 
 
     document.addEventListener("mousemove",function (e){locX=e.clientX;locY=e.clientY;})
 
@@ -198,17 +198,26 @@
         }
 });
 
-   function SetSceneGlobe()
+   function InitGlobe()
+  {
+    var globe3d = document.getElementById("globe");
+    if(!globe && globe3d)
+    {
+        globe = new DAT.Globe( globe3d );
+    }
+  }
+
+  function SetSceneGlobe()
    { 
     var globe3d = document.getElementById("globe");
     if(globe)
     {
-        globe.renderer.dispose()
+        if(globe.renderer) globe.renderer.dispose();
     disposeHierarchy (globe.points, disposeNode);
-    disposeHierarchy (globe, disposeNode);
     disposeHierarchy (globe.scene, disposeNode);
     
     globe3d.innerHTML="";
+    globe=null;
     }
 
     globe = new DAT.Globe( globe3d );
@@ -261,20 +270,17 @@
     console.log("counted subs")
     console.log(countedsubIPs)
     
+    var toRet=[]
     for(var i=0;i<countedsubIPs.length;i++)
     {
-        toRet=[]
-        
         toRet.push(countedsubIPs[i].lat)
         toRet.push(countedsubIPs[i].long)
         toRet.push(2*countedsubIPs[i].count/denom)
-        
-        
-
+    }
+    if(toRet.length > 0)
+    {
         globe.addData( toRet, {format: 'magnitude', name: "subDATA"} );
         globe.createPoints();
-        // Begin animation
-        globe.animate();
     }
 
 }
@@ -282,13 +288,15 @@ function SetRunGlobe()
    { 
     
     var rglobe3d = document.getElementById("globe");
-    if(globe.renderer)
-    {globe.renderer.dispose();}
-    disposeHierarchy (globe.points, disposeNode);
-    disposeHierarchy (globe, disposeNode);
-    disposeHierarchy (globe.scene, disposeNode);
-    rglobe3d.innerHTML="";
-    var rglobe = new DAT.Globe( rglobe3d );
+    if(globe)
+    {
+        if(globe.renderer) globe.renderer.dispose();
+        disposeHierarchy (globe.points, disposeNode);
+        disposeHierarchy (globe.scene, disposeNode);
+        rglobe3d.innerHTML="";
+        globe=null;
+    }
+    globe = new DAT.Globe( rglobe3d );
     console.log(globe.scene)
 
     var xhr = new XMLHttpRequest();
@@ -339,23 +347,18 @@ function SetRunGlobe()
     console.log("run: ")
     console.log(countedrunIPs)
     
+    var toRet=[]
     for(var i=0;i<countedrunIPs.length;i++)
     {
-        toRet=[]
-
         toRet.push(countedrunIPs[i].lat)
         toRet.push(countedrunIPs[i].long)
         toRet.push(2*countedrunIPs[i].count/denom)
-       
-        if(toRet.length ==3)
-        {
-        rglobe.addData( toRet, {format: 'magnitude', name: "runDATA"} );
-        rglobe.createPoints();
-        // Begin animation
-        rglobe.animate();
-        }
     }
-    
+    if(toRet.length > 0)
+    {
+        globe.addData( toRet, {format: 'magnitude', name: "runDATA"} );
+        globe.createPoints();
+    }
 
 }
 
@@ -405,7 +408,7 @@ function GetHeartbeats()
                     LastSubmit(hist_table.LastSub[0]);
                     
                     //DO MOVER
-                    StatusLight("MCMover-hb",hist_table.MCMover,2);
+                    //StatusLight("MCMover-hb",hist_table.MCMover,2);
                     
 
                 }
@@ -575,18 +578,33 @@ function QueryDatabase()
             xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
         }
         xmlhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var result_to_use;
-                console.log("decode Geo")
-                console.log(this.responseText)
-                if(this.responseText != "")
-                {
-                    ipTable=JSON.parse(this.responseText);
-                    console.log(ipTable)
-                    SetSceneGlobe();
-                    
+            if (this.readyState == 4) {
+                console.log("decodeGeo.php HTTP status:", this.status);
+                console.log("decodeGeo.php response:", this.responseText.substring(0,500));
+                if(this.status == 200) {
+                    if(this.responseText != "")
+                    {
+                        try {
+                            var parsed=JSON.parse(this.responseText);
+                            // handle both plain array and debug wrapper
+                            if(parsed && parsed.debug) {
+                                console.log("decodeGeo debug:", parsed.debug);
+                                ipTable = parsed.data || [];
+                            } else {
+                                ipTable = parsed;
+                            }
+                        } catch(e) {
+                            console.error("decodeGeo JSON parse error:", e);
+                            console.error("Raw response was:", this.responseText.substring(0,1000));
+                            ipTable=[];
+                        }
+                        console.log("ipTable:", ipTable)
+                        SetSceneGlobe();
+                    }
+                } else {
+                    console.error("decodeGeo.php failed with status "+this.status+": "+this.responseText.substring(0,500));
+                    SetSceneGlobe(); // still render globe without points
                 }
-                
             }
         };
         
@@ -695,7 +713,8 @@ function MakeProjectTable()
         { title: "BKG" , data: "BKG" },
         /*{ title: "OutputLocation" , data: "OutputLocation" },*/
         { title: "RCDBQuery" , data: "RCDBQuery" },
-        { title: "VersionSet" , data: "VersionSet" },
+        { title: "ReconVersionSet" , data: "VersionSet" },
+        { title: "SimVersionSet" , data: "SimVersionSet" },
         { title: "ANA_VersionSet" , data: "ANAVersionSet" },
         { title: "TotalJobs", data: "TotalActiveJobs", visible: false}
       ],
@@ -744,6 +763,7 @@ function MakeProjectTable()
                 $('td', row).eq(3).removeChild($('td', row).eq(4).childNodes[0])
               }
             $('td', row).eq(3).addClass('highlighttestfail');
+            $('td', row).eq(3).attr('title', 'Test failed');
           }
           else if(data["Tested"]==1)
           {
@@ -753,7 +773,7 @@ function MakeProjectTable()
                 $('td', row).eq(3).removeChild($('td', row).eq(4).childNodes[0])
               }
             $('td', row).eq(3).addClass('highlighttestpass');
-          
+            $('td', row).eq(3).attr('title', 'Running');
           }
           else if(data["Tested"]==2)
           {
@@ -764,6 +784,7 @@ function MakeProjectTable()
               }
               
             $('td', row).eq(3).addClass('highlightsuspended');
+            $('td', row).eq(3).attr('title', 'Project Suspended');
           
           }
           else if(data["Tested"]==0)
@@ -773,6 +794,55 @@ function MakeProjectTable()
             ($('td', row).eq(4)).appendChild(loadDiv)*/
             
             $('td', row).eq(3).addClass('hightlighttesting');
+            $('td', row).eq(3).attr('title', 'Testing');
+          
+          }
+          else if(data["Tested"]==20)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Waiting to bundle');
+          
+          }
+          else if(data["Tested"]==21)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Currently bundling');
+          
+          }
+          else if(data["Tested"]==40)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Declared complete; Waiting to bundle');
+          
+          }
+          else if(data["Tested"]==41)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Declared complete; Bundling');
+          
+          }
+          else if(data["Tested"]==100 || data["Tested"]==400)
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Finished bundling. Waiting to clear.');
+          
+          }
+          else if(data["Tested"]==4 )
+          {
+            /*  var loadDiv = document.createElement("DIV");
+              loadDiv.id="loader";
+            ($('td', row).eq(4)).appendChild(loadDiv)*/
+            $('td', row).eq(3).attr('title', 'Declared complete');
           
           }
       }
@@ -793,7 +863,7 @@ function MakeProjectTable()
 
     //ProjTable.draw();
     ProjTable.ajax.reload(function(){MakeProjectTable_lock=!MakeProjectTable_lock}, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 5000 );
+  }, 20000 );
     
 }
 
@@ -852,7 +922,7 @@ function MakeJobsTablenew(projID)
   }
   JobsInterval=setInterval( function () {
     jobsTable.ajax.reload(null, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 2000 );
+  }, 5000 );
 }
 function MakeAttemptsTable(projID,TotalActiveJobs)
   {
@@ -904,7 +974,8 @@ function MakeAttemptsTable(projID,TotalActiveJobs)
         { title: "Status" , data: "Status" },
         { title: "ExitCode" , data: "ExitCode" },
         { title: "Failed Program" , data: "ProgramFailed" },
-        { title: "WallTime" , data: "WallTime" }
+        { title: "WallTime" , data: "WallTime" },
+        { title: "DataVerified?", data: "DataVerified"}
         
       ]
   } );
@@ -915,7 +986,7 @@ function MakeAttemptsTable(projID,TotalActiveJobs)
   }
   AttemptsInterval= setInterval( function () {
     attemptsTable.ajax.reload(null, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
-  }, 2000 );
+  }, 5000 );
   QueryDatabaseRunIP(projID);
 }
 
@@ -1430,14 +1501,14 @@ function GetNews()
                 </div>
                 <br>
                 <hr>
-            <div class="container">
+            <!--<div class="container">
                     <div class="led-box">
                         <div class="led-green" id="MCMover-hb">
                                 
                         </div>
                         <p>Data Mover</p>
                     </div>
-                </div>
+                </div>-->
 </div>
 </div>
 </div>

@@ -1,33 +1,55 @@
 <?php
+// TEMPORARY DEBUG - remove when working
+//ini_set('display_errors', 0);
+//error_reporting(E_ALL);
+//$debug_log = array();
+//function dbg($msg) { global $debug_log; $debug_log[] = $msg; }
+
 require_once "writerConnection.php";
 // Check connection
 if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
+    header('Content-Type: application/json');
+    //echo json_encode(array("error" => "DB connection failed: " . mysqli_connect_error(), "debug" => $debug_log));
+    echo json_encode(array());
+    exit;
 }
 
-//GET IPS FROM PROJECTS
-$sql="SELECT DISTINCT UIp from Project where UIp is not NULL;";
+//GET IPS FROM ACTIVE PROJECTS ONLY (Tested: 0=testing, 1=running, 40=declared complete/waiting to bundle)
+$data = array();
+$data2 = array();
+$fdata = array();
+
+$sql="SELECT DISTINCT UIp FROM Project WHERE UIp IS NOT NULL AND Tested IN (0, 1, 40);";
+//dbg("SQL1: $sql");
 
 $result = $conn->query($sql);
+if(!$result) { /*dbg("SQL1 error: " . $conn->error);*/ }
 
-if ($result->num_rows > 0) {
-// output data of each row
+if ($result && $result->num_rows > 0) {
+    //dbg("Project IPs found: " . $result->num_rows);
     while($row = $result->fetch_assoc()) {
         $data[]=$row;
-        //echo $row["UIp"] . "<br>";//"id: " . $row["id"]. " - Run: " . $row["run"]. "<br>";
     }
-} 
+} else {
+    //dbg("No active project IPs found");
+}
 
-$sql2="SELECT DISTINCT RunIP from Attempts where RunIP is not NULL && BatchSystem='OSG';";
+// Run IPs: only from attempts belonging to active projects
+$sql2="SELECT DISTINCT a.RunIP FROM Attempts a
+       INNER JOIN Project p ON a.Project_ID = p.ID
+       WHERE a.RunIP IS NOT NULL AND a.BatchSystem='OSG' AND p.Tested IN (0, 1, 40);";
+//dbg("SQL2: $sql2");
 
 $result2 = $conn->query($sql2);
+if(!$result2) { /*dbg("SQL2 error: " . $conn->error);*/ }
 
-if ($result2->num_rows > 0) {
-// output data of each row
+if ($result2 && $result2->num_rows > 0) {
+    //dbg("Run IPs found: " . $result2->num_rows);
     while($row2 = $result2->fetch_assoc()) {
         $data2[]=$row2;
-        //echo $row["UIp"] . "<br>";//"id: " . $row["id"]. " - Run: " . $row["run"]. "<br>";
     }
+} else {
+    //dbg("No active run IPs found");
 }
 
 
@@ -38,45 +60,42 @@ foreach ($data as $row)
 {
     $IP_TO_LOOKUP=$row["UIp"];
 
-    $check_DB="SELECT ID FROM Locations WHERE IP=\"" . $IP_TO_LOOKUP . "\"";
-    //echo $check_DB . "<br>";
+    // Skip if already cached WITH valid coords; re-try if cached as NULL (old failed lookup)
+    $check_DB="SELECT ID FROM Locations WHERE IP=\"" . $IP_TO_LOOKUP . "\" AND Latitude IS NOT NULL";
     $check=$conn->query($check_DB);
-   // echo "rows ".$check->num_rows . "<br>";
 
     if($check->num_rows != 0)
     {
         continue;
     }
-    //echo $count . "<br>";
-    if($count>5)
+    // Delete stale NULL entry so we can re-insert
+    $conn->query("DELETE FROM Locations WHERE IP=\"" . $IP_TO_LOOKUP . "\" AND Latitude IS NULL");
+
+    if($count>=5)
     {
         break;
     }
 
-
-   Lookup($conn,$IP_TO_LOOKUP);
+    Lookup($conn,$IP_TO_LOOKUP);
     $count=$count+1;
-    
-    //echo $vars;
-    //echo $ret;
-   // echo "==================" . "<br>";
 }
-//var_dump($data2);
-//echo "<br>";
 foreach ($data2 as $row2)
 {
     $IP_TO_LOOKUP2=$row2["RunIP"];
 
-    $check_DB2="SELECT ID FROM Locations WHERE IP=\"" . $IP_TO_LOOKUP2 . "\"";
-    //echo $check_DB2 . "<br>";
+    $check_DB2="SELECT ID FROM Locations WHERE IP=\"" . $IP_TO_LOOKUP2 . "\" AND Latitude IS NOT NULL";
     $check2=$conn->query($check_DB2);
-    //echo "rows ".$check2->num_rows . " <br>";
 
     if($check2->num_rows != 0)
     {
         continue;
     }
-    //echo $count . "<br>";
+    $conn->query("DELETE FROM Locations WHERE IP=\"" . $IP_TO_LOOKUP2 . "\" AND Latitude IS NULL");
+
+    if($count>=5)
+    {
+        break;
+    }
 
     Lookup($conn,$IP_TO_LOOKUP2);
     $count=$count+1;
@@ -85,79 +104,79 @@ foreach ($data2 as $row2)
 }
 
 
-$fsql="SELECT * FROM Locations;";
+// Collect all IPs we need coords for
+$allIPs = array();
+foreach ($data  as $r) { $allIPs[] = "\"" . $conn->real_escape_string($r["UIp"])   . "\""; }
+foreach ($data2 as $r) { $allIPs[] = "\"" . $conn->real_escape_string($r["RunIP"]) . "\""; }
+//dbg("Total unique IPs to look up: " . count(array_unique($allIPs)));
+
+if (count($allIPs) > 0) {
+    $inList = implode(",", array_unique($allIPs));
+    $fsql = "SELECT * FROM Locations WHERE IP IN ($inList) AND Latitude IS NOT NULL;";
+} else {
+    $fsql = "SELECT * FROM Locations WHERE 1=0;"; // nothing to fetch
+}
+//dbg("Final SQL: " . substr($fsql, 0, 200));
 
 $fresult = $conn->query($fsql);
+if(!$fresult) { /*dbg("Final SQL error: " . $conn->error);*/ }
 
-if ($fresult->num_rows > 0) {
-// output data of each row
+if ($fresult && $fresult->num_rows > 0) {
+    //dbg("Locations returned: " . $fresult->num_rows);
     while($frow = $fresult->fetch_assoc()) {
         $fdata[]=$frow;
-        //echo $row["UIp"] . "<br>";//"id: " . $row["id"]. " - Run: " . $row["run"]. "<br>";
     }
-} 
+} else {
+    //dbg("No locations found for these IPs");
+}
 
 $conn->close();
 
+header('Content-Type: application/json');
 echo json_encode($fdata);
-return json_encode($fdata);
+return;
 
 function Lookup($conn,$IP)
 {
-//echo "LOOKUP <br>";
-$baseUrlip= "http://api.ipapi.com/";
-$key="?access_key=cc138a088a1a86604716a19dc20ad07a";
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    // Using ip-api.com - free, no API key required, 45 req/min
+    // Fields: status,lat,lon,query
+    $baseUrlip = "http://ip-api.com/json/";
+    $fields = "?fields=status,message,lat,lon,query";
 
-$urlstr= $baseUrlip .$IP. $key;
-    //echo $urlstr . "<br>";
-    
-    //echo "curl exec <br>";
-    
-    curl_setopt($ch, CURLOPT_URL, $urlstr);
-    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_URL, $baseUrlip . $IP . $fields);
 
     $ret = curl_exec($ch);
-    if ($ret === false) 
-    {
-    $ret = curl_error($ch);
-    //echo $ret . "<br>";
-    }
-    else
-    {
-    
-    $vars = json_decode($ret , true);
-    //var_dump($vars);
-    //echo "<br>";
+    curl_close($ch);
 
-    $IP_TO_USE=$vars["ip"];
-    $LONG_TO_USE=NULL;
-    $LAT_TO_USE=NULL;
-    
-    if($vars["longitude"] != NULL)
-    {
-        //echo "NOT NULL" . "<br>";
-        $LONG_TO_USE=$vars["longitude"];
+    if ($ret === false) {
+        error_log("decodeGeo curl error for IP $IP");
+        return;
     }
-    if($vars["latitude"])
-    {
-        $LAT_TO_USE=$vars["latitude"];
+
+    $vars = json_decode($ret, true);
+    if (!$vars || $vars["status"] !== "success") {
+        error_log("decodeGeo lookup failed for IP $IP: " . (isset($vars["message"]) ? $vars["message"] : "unknown"));
+        // Still cache it as NULL so we don't keep retrying a bad IP
+        $IP_TO_USE = $conn->real_escape_string($IP);
+        $conn->query("INSERT INTO Locations (IP, Longitude, Latitude) VALUES (\"$IP_TO_USE\", NULL, NULL)");
+        $conn->commit();
+        return;
     }
-    $isql = "INSERT INTO Locations (IP, Longitude, Latitude)" . " VALUES (\"".$IP_TO_USE."\"," . $LONG_TO_USE .",". $LAT_TO_USE ."); ";
-   // echo $vars["ip"] . " | " . $vars["longitude"] . " | " . $vars["latitude"] . "<br>";
-   if($LAT_TO_USE==NULL && $LONG_TO_USE ==NULL)
-    {
-        //echo "IS NULL" . "<br>";
-        $isql = "INSERT INTO Locations (IP,Longitude,Latitude)" . " VALUES (\"".$IP_TO_USE."\",NULL,NULL);";
+
+    $IP_TO_USE   = $conn->real_escape_string($vars["query"]);
+    $LONG_TO_USE = isset($vars["lon"]) ? floatval($vars["lon"]) : NULL;
+    $LAT_TO_USE  = isset($vars["lat"]) ? floatval($vars["lat"]) : NULL;
+
+    if ($LAT_TO_USE !== NULL && $LONG_TO_USE !== NULL) {
+        $isql = "INSERT INTO Locations (IP, Longitude, Latitude) VALUES (\"$IP_TO_USE\", $LONG_TO_USE, $LAT_TO_USE)";
+    } else {
+        $isql = "INSERT INTO Locations (IP, Longitude, Latitude) VALUES (\"$IP_TO_USE\", NULL, NULL)";
     }
-    
-   // echo $isql . "<br>";
+
     $conn->query($isql);
     $conn->commit();
-
-   
-curl_close($ch);
-}
 }
 ?>

@@ -5,14 +5,29 @@ if (!$conn_vs) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-if( $_GET["recon_ver"] == "unknown")
+if( isset($_GET["package"]) && isset($_GET["query"]) && $_GET["query"] == "versionsets")
 {
-    $sql="SELECT DISTINCT version FROM version WHERE packageID in (SELECT id from package where name=\"halld_recon\") && versionSetId in (SELECT DISTINCT versionSetId from version where packageID in (SELECT id from package where name=\"halld_sim\") ) && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) ORDER BY version desc;";
+    // New query format: get version sets containing a specific package version
+    $package = $_GET["package"];
+    $version = $_GET["version"];
+    
+    if( $version == "master" )
+    {
+        $sql="SELECT filename as version from versionSet where id in (SELECT DISTINCT versionSetId from version where version is NULL && packageId in (SELECT id from package where name=\"" . $package . "\")) && onOasis=1 ORDER BY filename DESC;";
+    }
+    else
+    {
+        $sql="SELECT filename as version from versionSet where id in (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"" . $package . "\") && version=\"" . $version . "\") && onOasis=1 && filename NOT LIKE \"analysis-%\" ORDER BY filename DESC;";
+    }
+}
+else if( $_GET["recon_ver"] == "unknown")
+{
+    $sql="SELECT DISTINCT version FROM version WHERE packageID in (SELECT id from package where name=\"halld_recon\") && versionSetId in (SELECT DISTINCT versionSetId from version where packageID in (SELECT id from package where name=\"halld_sim\") ) && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) ORDER BY SUBSTRING(version,1,20) DESC, ID DESC;";
     #echo $sql;
 }
 else if( $_GET["sim_ver"] == "unknown")
 {
-    $sql="SELECT DISTINCT version from version where packageID in (SELECT id from package where name=\"halld_sim\") && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_recon\") && version=\"" . $_GET["recon_ver"] . "\") && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) ORDER BY version desc;";
+    $sql="SELECT DISTINCT version from version where packageID in (SELECT id from package where name=\"halld_sim\") && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) ORDER BY version DESC;";
 }
 else if( !isset($_GET["verSet"]) )
 {
@@ -24,7 +39,7 @@ else if( !isset($_GET["verSet"]) )
     else
     {
     
-    $sqlsub="SELECT DISTINCT versionSetID from version where versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_recon\") && version=\"" . $_GET["recon_ver"] . "\")" . " && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_sim\") && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) && version=\"" . $_GET["sim_ver"] . "\") ORDER BY version desc";
+    $sqlsub="SELECT DISTINCT versionSetID from version where versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_recon\") && version=\"" . $_GET["recon_ver"] . "\")" . " && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_sim\") && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) && version=\"" . $_GET["sim_ver"] . "\")";
     $sql="SELECT filename as version,id as SetNum from versionSet where id in (" . $sqlsub . ") ORDER BY filename desc;";
     //$sql="SELECT DISTINCT versionSetID from version where versionSetID IN (SELECT DISTINCT versionSetId from version where packageId=2 && version=\"" . $_GET["recon_ver"] . "\")" . " && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId=3 && version=\"" . $_GET["sim_ver"] . "\");";
     //echo $sql;
@@ -37,7 +52,7 @@ else
     #echo $sql;
 }
 
-//echo $sql;
+// echo $sql;
 $result = $conn_vs->query($sql);
 
 $data = array();

@@ -26,7 +26,6 @@
                           They are acting like a real hamburger,
                           not that McDonalds stuff.
                           -->
-                          Menu
                           <span></span>
                           <span></span>
                           <span></span>
@@ -348,8 +347,9 @@ function LoopAndFill(result)
 
 
     MakeSelectedByValue(document.getElementById("recon_stack"),result.recon_ver)
+    //MakeSelectedByValue(document.getElementById("recon_verSet"),result.sim_ver)
     MakeSelectedByValue(document.getElementById("sim_ver"),result.sim_ver)
-    MakeSelectedByValue(document.getElementById("verSet"),result.VersionSet)
+    //MakeSelectedByValue(document.getElementById("sim_verSet"),result.sim_ver)
     if(result.RunNumLow == result.RunNumHigh)
     {
         document.getElementById("runnum").value=result.RunNumLow
@@ -393,6 +393,36 @@ function LoopAndFill(result)
         document.getElementById("cobrems_flux").checked=true;
     }
 
+    var eBeamEOption=document.getElementById("eBeamEnergyOption")
+    if(eBeamEOption)
+    {
+        if(result.eBeamEnergy)
+        {
+            MakeSelectedByValue(document.getElementById("eBeamEnergyOption"),"Custom")
+            updateEBeamEnergy();
+            document.getElementById("eBeamE").value=parseFloat(result.eBeamEnergy).toFixed(3)
+        }
+        else
+        {
+            MakeSelectedByValue(document.getElementById("eBeamEnergyOption"),"RCDB")
+        }
+    }
+
+    var eBeamCurOption=document.getElementById("eBeamCurrentOption")
+    if(eBeamCurOption)
+    {
+        if(result.eBeamCurrent)
+        {
+            MakeSelectedByValue(document.getElementById("eBeamCurrentOption"),"Custom")
+            updateEBeamCurrent();
+            document.getElementById("eBeamI").value=parseFloat(result.eBeamCurrent).toFixed(3)
+        }
+        else
+        {
+            MakeSelectedByValue(document.getElementById("eBeamCurrentOption"),"RCDB")
+        }
+    }
+
     if(result.GenPostProcessing)
     {
         //split by colon
@@ -432,7 +462,7 @@ function LoopAndFill(result)
         MakeSelectedByValue(document.getElementById("bkg"),result.BKG)
         updateBKGoptions();
     }
-    else if(bkgarr[0]=="loc")
+    else if(bkgarr[0]=="Random loc")
     {
         MakeSelectedByValue(document.getElementById("bkg"),"Random loc:/")
         updateBKGoptions();
@@ -706,7 +736,52 @@ function MakeGlueXBeamTimeSelector()
     selLabel.appendChild(document.createTextNode("Beam time"))
     form.appendChild(selLabel)
 
-    
+    var runPeriods = [
+        { id: "in20170103",   label: "2017-01 (ver03)",  value: "2017_01-ver03",  fill: "2017_01-ver03" },
+        { id: "in20170104",   label: "2017-01 (ver04)",  value: "2017_01-ver04",  fill: "2017_01-ver04" },
+        { id: "in20170105",   label: "2017-01 (ver05)",  value: "2017_01-ver05",  fill: "2017_01-ver05" },
+        { id: "in201801",     label: "2018-01",          value: "2018_01",        fill: "2018_01-ver02" },
+        { id: "in201808",     label: "2018-08",          value: "2018_08",        fill: "2018_08-ver02" },
+        { id: "in201808lowE", label: "2018-08 lowE",     value: "2018_08",        fill: "lowE" },
+        { id: "in201911",     label: "2019-11",          value: "2019_11",        fill: "2019_11-ver01" },
+        { id: "in202301",     label: "2023-01",          value: "2023_01",        fill: "2023_01-ver04" },
+        { id: "in202501",     label: "2025-01",          value: "2025_01",        fill: "2025_01-ver03" },
+        { id: "inCustom",     label: "custom",           value: "custom",         fill: "custom", checked: true }
+    ];
+
+    runPeriods.forEach(function(period) {
+
+        // Wrapper div for spacing
+        var wrapper = document.createElement("div");
+        wrapper.className = "radio-option";
+
+        // Create radio input
+        var input = document.createElement("input");
+        input.type = "radio";
+        input.id = period.id;
+        input.name = "btsel";
+        input.value = period.value;
+        input.className = "run-period-label";
+
+        if (period.checked) {
+            input.checked = true;
+        }
+
+        input.addEventListener("click", function() {
+            FillDefaults(period.fill);
+        });
+        form.appendChild(input)
+
+        // Create label
+        var label = document.createElement("label");
+        label.setAttribute("for", period.id);
+        label.className = "run-period-label";
+        label.appendChild(document.createTextNode(period.label))
+        //label.textContent = period.label
+        form.appendChild(label)
+    });
+
+/*
     var in20170103 = document.createElement("input")
     in20170103.setAttribute("type","radio")
     in20170103.setAttribute("id","in20170103")
@@ -718,6 +793,7 @@ function MakeGlueXBeamTimeSelector()
     label20170103.setAttribute("for", "in20170103");
     label20170103.appendChild(document.createTextNode("2017-01 (ver03)"))
     form.appendChild(label20170103)
+
     var in20170104 = document.createElement("input")
     in20170104.setAttribute("type","radio")
     in20170104.setAttribute("id","in20170104")
@@ -729,6 +805,19 @@ function MakeGlueXBeamTimeSelector()
     label20170104.setAttribute("for", "in20170104");
     label20170104.appendChild(document.createTextNode("2017-01 (ver04)"))
     form.appendChild(label20170104)
+
+    var in20170105 = document.createElement("input")
+    in20170105.setAttribute("type","radio")
+    in20170105.setAttribute("id","in20170105")
+    in20170105.setAttribute("name","btsel")
+    in20170105.setAttribute("value","2017_01-ver05")
+    in20170105.setAttribute("onclick","FillDefaults('2017_01-ver05');")
+    form.appendChild(in20170105)
+    var label20170105=document.createElement("LABEL");
+    label20170105.setAttribute("for", "in20170105");
+    label20170105.appendChild(document.createTextNode("2017-01 (ver05)"))
+    form.appendChild(label20170105)
+
     var in201801 = document.createElement("input")
     in201801.setAttribute("type","radio")
     in201801.setAttribute("id","in201801")
@@ -740,6 +829,7 @@ function MakeGlueXBeamTimeSelector()
     label201801.setAttribute("for", "in201801");
     label201801.appendChild(document.createTextNode("2018-01"))
     form.appendChild(label201801)
+
     var in201808 = document.createElement("input")
     in201808.setAttribute("type","radio")
     in201808.setAttribute("id","in201808")
@@ -751,6 +841,7 @@ function MakeGlueXBeamTimeSelector()
     label201808.setAttribute("for", "in201808");
     label201808.appendChild(document.createTextNode("2018-08"))
     form.appendChild(label201808)
+
     var in201808lowE = document.createElement("input")
     in201808lowE.setAttribute("type","radio")
     in201808lowE.setAttribute("id","in201808lowE")
@@ -762,6 +853,7 @@ function MakeGlueXBeamTimeSelector()
     label201808lowE.setAttribute("for", "in201808lowE");
     label201808lowE.appendChild(document.createTextNode("2018-08 lowE"))
     form.appendChild(label201808lowE)
+
     var in201911 = document.createElement("input")
     in201911.setAttribute("type","radio")
     in201911.setAttribute("id","in201911")
@@ -773,6 +865,31 @@ function MakeGlueXBeamTimeSelector()
     label201911.setAttribute("for", "in201911");
     label201911.appendChild(document.createTextNode("2019-11"))
     form.appendChild(label201911)
+
+    var in202301 = document.createElement("input")
+    in202301.setAttribute("type","radio")
+    in202301.setAttribute("id","in202301")
+    in202301.setAttribute("name","btsel")
+    in202301.setAttribute("value","2023_01")
+    in202301.setAttribute("onclick","FillDefaults('2023_01-ver04');")
+    form.appendChild(in202301)
+    var label202301=document.createElement("LABEL");
+    label202301.setAttribute("for", "in202301");
+    label202301.appendChild(document.createTextNode("2023-01"))
+    form.appendChild(label202301)
+
+    var in202501 = document.createElement("input")
+    in202501.setAttribute("type","radio")
+    in202501.setAttribute("id","in202501")
+    in202501.setAttribute("name","btsel")
+    in202501.setAttribute("value","2025_01")
+    in202501.setAttribute("onclick","FillDefaults('2025_01-ver03');")
+    form.appendChild(in202501)
+    var label202501=document.createElement("LABEL");
+    label202501.setAttribute("for", "in202501");
+    label202501.appendChild(document.createTextNode("2025-01"))
+    form.appendChild(label202501)
+
     var inCustom = document.createElement("input")
     inCustom.setAttribute("type","radio")
     inCustom.setAttribute("id","inCustom")
@@ -785,7 +902,7 @@ function MakeGlueXBeamTimeSelector()
     labelCustom.setAttribute("for", "inCustom");
     labelCustom.appendChild(document.createTextNode("custom"))
     form.appendChild(labelCustom)
-    
+*/
 }
 function FillDefaults(beamtime){
     
@@ -796,7 +913,29 @@ function FillDefaults(beamtime){
             MakeSelectedByValue(reconver,reconver[i].value)
             break
         }
-        else if(beamtime=="2017_01-ver04" && reconver[i].value.startsWith("recon-2019_11-ver01")){ //special case since 2017_01-ver04 is same reco as 2019_11-ver01
+        else if(beamtime=="2017_01-ver05" && reconver[i].value.startsWith("5.8.1")){
+            // There was no halld_recon build called 'recon-2017_01-ver05'.
+            // Instead, this data production campaign used halld_recon version 5.8.1 and the version_7.2.0.xml. 
+            // Within the halld_versions directory, recon-2017_01-ver05.xml is symlink to version_7.2.0.xml.
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if(beamtime=="2023_01-ver04" && reconver[i].value.startsWith("5.1.2")){
+            // There was no halld_recon build called 'recon-2023_01-ver04'.
+            // Instead, this data production campaign used halld_recon version 5.1.2 and the version_6.1.3.xml. 
+            // Within the halld_versions directory, recon-2023_01-ver04.xml is symlink to version_6.1.3.xml.
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if(beamtime=="2025_01-ver03" && reconver[i].value.startsWith("5.9.0")){
+            // There was no halld_recon build called 'recon-2025_01-ver03'.
+            // Instead, this data production campaign used halld_recon version 5.9.0 and the version_7.3.0.xml. 
+            // Within the halld_versions directory, recon-2025_01-ver03.xml is symlink to version_7.3.0.xml.
+            MakeSelectedByValue(reconver,reconver[i].value)
+            break
+        }
+        else if(beamtime=="2017_01-ver04" && reconver[i].value.startsWith("recon-2019_11-ver01")){
+            // special case since 2017_01-ver04 is same reco as 2019_11-ver01
             MakeSelectedByValue(reconver,reconver[i].value)
             break
         }
@@ -810,7 +949,54 @@ function FillDefaults(beamtime){
         }
     }
 
-    //DoSimQuery()
+    // Update recon version set based on selected recon version
+    DoReconSetQuery();
+
+    // Update sim version set based on selected sim verion
+    DoSimSetQuery();
+
+
+    var e = document.getElementById("recon_stack");
+    var selRecon = e.options[e.selectedIndex].value;
+    if (window.XMLHttpRequest) {
+        // code for IE7+, Firefox, Chrome, Opera, Safari
+        xmlhttp = new XMLHttpRequest();
+    } else {
+        // code for IE6, IE5
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            result=JSON.parse(this.responseText);
+            console.log(result)
+            PopulateVer("recon_verSet",result)
+            var verset = document.getElementById("recon_verSet")
+            for(var i = 0; i < verset.length; i++){
+                if(verset[i].value.startsWith("recon-"+beamtime)){
+                    MakeSelectedByValue(verset,verset[i].value)
+                    break
+                }
+            }
+            updatePreview();
+        }
+    }
+    query_to_do="SELECT DISTINCT"
+    console.log("./php/versionFinder.php?package=halld_recon&version="+selRecon+"&query=versionsets")
+    xmlhttp.open("GET","./php/versionFinder.php?package=halld_recon&version="+selRecon+"&query=versionsets");
+    xmlhttp.send();
+/*
+    var reconverSet = document.getElementById("recon_verSet")
+    console.log("Recon sets:")
+    for(var i = 0; i < reconverSet.length; i++){
+        console.log(reconverSet[i].value)
+        if(reconverSet[i].value.startsWith("recon-"+beamtime)){
+            console.log("setting recon_verSet to "+reconverSet[i].value)
+            MakeSelectedByValue(reconverSet,reconverSet[i].value)
+            break
+        }
+    }
+*/
+/*
     // need to do it here since we need to wait for XMLHttpRequest to respond
     // before we can set the version set "by hand", couldn't do it with a function call
     var selRecon = reconver.options[reconver.selectedIndex].value;
@@ -847,16 +1033,27 @@ function FillDefaults(beamtime){
                     result2=JSON.parse(this.responseText);
 
                     console.log(result2)
-                    PopulateVer("verSet",result2)
+                    PopulateVer("sim_verSet",result2)
                     if(document.getElementById("prefill").value != "-1" )
                     {
 
-                    MakeSelectedByValue(document.getElementById("verSet"),project.VersionSet)
+                    MakeSelectedByValue(document.getElementById("sim_verSet"),project.VersionSet)
+                    }
+                    // by default, select the recon-2017_01-ver05.xml version set instead of the version_7.2.0.xml version set.
+                    // They are identical, but the naming of the convention of the former makes it more clear to users.
+                    if(beamtime=="2017_01-ver05"){
+                        var verset = document.getElementById("recon_verSet")
+                        for(var i = 0; i < verset.length; i++){
+                            if(verset[i].value.startsWith("recon-2017_01-ver05")){
+                                MakeSelectedByValue(verset,verset[i].value)
+                                break
+                            }
+                        }
                     }
                     //special case since 2017_01-ver04 is same reco as 2019_11-ver01 but has different version set
                     //can easily be generalised if more such cases arise
                     if(beamtime=="2017_01-ver04"){
-                        var verset = document.getElementById("verSet")
+                        var verset = document.getElementById("recon_verSet")
                         for(var i = 0; i < verset.length; i++){
                             if(verset[i].value.startsWith("recon-2017_01-ver04")){
                                 MakeSelectedByValue(verset,verset[i].value)
@@ -880,15 +1077,13 @@ function FillDefaults(beamtime){
             console.log("./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver="+selSim)
             xmlhttp2.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver="+selSim);
             xmlhttp2.send();
-            }
-
         }
+    }
     query_to_do="SELECT DISTINCT"
     console.log("./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown")
     xmlhttp.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown");
     xmlhttp.send();
-
-
+*/
     //RUNRANGES
     var range = document.getElementById("numOrRange")
     if(beamtime=="custom")
@@ -912,17 +1107,23 @@ function FillDefaults(beamtime){
         var runmax = document.getElementById("maxRunNum")
         beamtime == "2017_01-ver03" ? runmin.value=30274
         : beamtime == "2017_01-ver04" ? runmin.value=30274
+        : beamtime == "2017_01-ver05" ? runmin.value=30274
         : beamtime == "2018_01-ver02" ? runmin.value=40856
         : beamtime == "2018_08-ver02" ? runmin.value=50677
         : beamtime == "lowE" ? runmin.value=51384
         : beamtime == "2019_11-ver01" ? runmin.value=71350
+        : beamtime == "2023_01-ver04" ? runmin.value=120297
+        : beamtime == "2025_01-ver03" ? runmin.value=132194
         : runmin.value=""
         beamtime == "2017_01-ver03" ? runmax.value=31057
         : beamtime == "2017_01-ver04" ? runmax.value=31057
+        : beamtime == "2017_01-ver05" ? runmax.value=31057
         : beamtime == "2018_01-ver02" ? runmax.value=42577
         : beamtime == "2018_08-ver02" ? runmax.value=51768
         : beamtime == "lowE" ? runmax.value=51457
         : beamtime == "2019_11-ver01" ? runmax.value=73266
+        : beamtime == "2023_01-ver04" ? runmax.value=121207
+        : beamtime == "2025_01-ver03" ? runmax.value=133606
         : runmax.value=""
         document.getElementById("maxrunrange").value=runmax.value
 
@@ -931,10 +1132,13 @@ function FillDefaults(beamtime){
             var rcdbquery = document.getElementById("rcdbq")
             beamtime == "2017_01-ver03" ?  rcdbquery.value="@is_production and @status_approved"
             : beamtime == "2017_01-ver04" ?  rcdbquery.value="@is_production and @status_approved"
+            : beamtime == "2017_01-ver05" ?  rcdbquery.value="@is_production and @status_approved"
             : beamtime == "2018_01-ver02" ?  rcdbquery.value="@is_2018production and @status_approved"
             : beamtime == "2018_08-ver02" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current>49"
             : beamtime == "lowE" ?  rcdbquery.value="@is_2018production and @status_approved and beam_on_current<49"
             : beamtime == "2019_11-ver01" ?  rcdbquery.value="@is_dirc_production and @status_approved"
+            : beamtime == "2023_01-ver04" ?  rcdbquery.value="@is_dirc_production and @status_approved"
+            : beamtime == "2025_01-ver03" ?  rcdbquery.value="@is_dirc_production and @status_approved"
             : rcdbquery.value=""
             rcdbquery.setAttribute("readonly","")
             document.getElementById("savedrcdbquery").value=rcdbquery.value
@@ -980,6 +1184,94 @@ function FillDefaults(beamtime){
         document.getElementById("GeantSecYes").style.visibility="visible"
     }
 
+    // ELECTRON BEAM ENERGY:
+    
+    var eBeamEOption = document.getElementById("eBeamEnergyOption")
+    MakeSelectedByValue(eBeamEOption, "RCDB")
+    updateEBeamEnergy();
+    
+    if(beamtime=="custom")
+    {
+        var ebeamlabel = document.getElementById("eBeamEnergyLabel")
+        var ebeamoption = document.getElementById("eBeamEnergyOption")
+        
+        ebeamlabel.style.visibility="initial"
+        ebeamoption.style.visibility="initial"
+        
+        // create <br> before electron beam energy field if not already there:
+        if(!document.getElementById("eBeamEnergy_br1")) {
+            var ebeam_br1 = document.createElement("BR")
+            ebeam_br1.id="eBeamEnergy_br1"
+            ebeamlabel.parentNode.insertBefore(ebeam_br1, ebeamlabel)
+        }
+        
+        // create <br> after electron beam energy field if not already there:
+        if(!document.getElementById("eBeamEnergy_br2")) {
+            var ebeam_br2 = document.createElement("BR")
+            ebeam_br2.id="eBeamEnergy_br2"
+            ebeamoption.parentNode.insertBefore(ebeam_br2, ebeamoption.nextSibling)
+        }
+    }
+    else {
+        document.getElementById("eBeamEnergyLabel").style.visibility="hidden"
+        document.getElementById("eBeamEnergyOption").style.visibility="hidden"
+        
+        // delete <br> before electron beam energy field if it exists:
+        if(document.getElementById("eBeamEnergy_br1"))
+        {
+            removeElementByID("eBeamEnergy_br1");
+        }
+        // delete <br> after electron beam energy field if it exists:
+        if(document.getElementById("eBeamEnergy_br2"))
+        {
+            removeElementByID("eBeamEnergy_br2");
+        }
+    }
+
+    // ELECTRON BEAM CURRENT:
+    
+    var eBeamCurOption = document.getElementById("eBeamCurrentOption")
+    MakeSelectedByValue(eBeamCurOption, "RCDB")
+    updateEBeamCurrent();
+    
+    if(beamtime=="custom")
+    {
+        var ecurlabel = document.getElementById("eBeamCurrentLabel")
+        var ecuroption = document.getElementById("eBeamCurrentOption")
+        
+        ecurlabel.style.visibility="initial"
+        ecuroption.style.visibility="initial"
+        
+        // create <br> before electron beam energy field if not already there:
+        if(!document.getElementById("eBeamCurrent_br1")) {
+            var ecur_br1 = document.createElement("BR")
+            ecur_br1.id="eBeamCurrent_br1"
+            ecurlabel.parentNode.insertBefore(ecur_br1, ecurlabel)
+        }
+        
+        // create <br> after electron beam energy field if not already there:
+        if(!document.getElementById("eBeamCurrent_br2")) {
+            var ecur_br2 = document.createElement("BR")
+            ecur_br2.id="eBeamCurrent_br2"
+            ecuroption.parentNode.insertBefore(ecur_br2, ecuroption.nextSibling)
+        }
+    }
+    else {
+        document.getElementById("eBeamCurrentLabel").style.visibility="hidden"
+        document.getElementById("eBeamCurrentOption").style.visibility="hidden"
+        
+        // delete <br> before electron beam energy field if it exists:
+        if(document.getElementById("eBeamCurrent_br1"))
+        {
+            removeElementByID("eBeamCurrent_br1");
+        }
+        // delete <br> after electron beam energy field if it exists:
+        if(document.getElementById("eBeamCurrent_br2"))
+        {
+            removeElementByID("eBeamCurrent_br2");
+        }
+    }
+
     //BACKGROUNDS
     var bkgselect = document.getElementById("bkg")
     if(beamtime=="custom")
@@ -995,10 +1287,13 @@ function FillDefaults(beamtime){
         var rndtag = document.getElementById("randomtag")
         beamtime == "2017_01-ver03" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
         : beamtime == "2017_01-ver04" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+        : beamtime == "2017_01-ver05" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
         : beamtime == "2018_01-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_01-ver02.2")
         : beamtime == "2018_08-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
         : beamtime == "lowE" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
-        : beamtime == "2019_11-ver01" ? MakeSelectedByValue(rndtag,"recon-2019_11-ver01")
+        : beamtime == "2019_11-ver01" ? MakeSelectedByValue(rndtag,"recon-2019_11-ver01.2")
+        : beamtime == "2023_01-ver04" ? MakeSelectedByValue(rndtag,"recon-2023-01-ver04")
+        : beamtime == "2025_01-ver03" ? MakeSelectedByValue(rndtag,"recon-2025_01-ver03")
         : MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
     }
 
@@ -1042,7 +1337,7 @@ function MakeGluexForm()
     var recselect=document.createElement("SELECT")
     recselect.id="recon_stack"
     recselect.name="halld_recon_ver"
-    recselect.setAttribute("onchange","DoSimQuery();MakeCheckButton();");
+    recselect.setAttribute("onchange","DoReconSetQuery();MakeCheckButton();");
     form.appendChild(recselect)
     verFAQ2=verFAQ.cloneNode()
     verFAQ2.onclick = function() {
@@ -1052,6 +1347,24 @@ function MakeGluexForm()
     form.appendChild(verFAQ2)
     form.appendChild(document.createElement("BR"))
 
+    var reconverlabel=document.createElement("LABEL");
+    reconverlabel.setAttribute("for", "recon_verSet");
+    reconverlabel.appendChild(document.createTextNode("recon version Set:"))
+    form.appendChild(reconverlabel)
+    var reconverselect=document.createElement("SELECT")
+    reconverselect.id="recon_verSet"
+    reconverselect.name="recon_versionSet"
+    reconverselect.setAttribute("onchange","updatePreview();MakeCheckButton();");
+    form.appendChild(reconverselect)
+    verFAQ3=verFAQ.cloneNode()
+    verFAQ3.onclick = function() {
+        window.open('https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form',"_blank")
+    };
+    form.appendChild(verFAQ3)
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+
     var simlabel=document.createElement("LABEL");
     simlabel.setAttribute("for", "sim_ver");
     simlabel.appendChild(document.createTextNode("halld_sim version:"))
@@ -1059,26 +1372,25 @@ function MakeGluexForm()
     var simselect=document.createElement("SELECT")
     simselect.id="sim_ver"
     simselect.name="halld_sim_ver"
-    simselect.setAttribute("onchange","DoSetQuery();MakeCheckButton();");
+    simselect.setAttribute("onchange","DoSimSetQuery();MakeCheckButton();");
     form.appendChild(simselect)
-    verFAQ3=verFAQ.cloneNode()
-    verFAQ3.onclick = function() {
+    verFAQ4=verFAQ.cloneNode()
+    verFAQ4.onclick = function() {
         window.open('https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form',"_blank")
     //window.location.href = 'https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form';
     };
-    form.appendChild(verFAQ3)
+    form.appendChild(verFAQ4)
     form.appendChild(document.createElement("BR"))
 
-    var verlabel=document.createElement("LABEL");
-    verlabel.setAttribute("for", "verSet");
-    verlabel.appendChild(document.createTextNode("version Set:"))
-    form.appendChild(verlabel)
-    var verselect=document.createElement("SELECT")
-    verselect.id="verSet"
-    verselect.name="versionSet"
-    verselect.setAttribute("onchange","updatePreview();DoANASetQuery();MakeCheckButton();");
-    //verselect.onchange="updatePreview();MakeCheckButton()"
-    form.appendChild(verselect)
+    var simverlabel=document.createElement("LABEL");
+    simverlabel.setAttribute("for", "sim_verSet");
+    simverlabel.appendChild(document.createTextNode("sim version Set:"))
+    form.appendChild(simverlabel)
+    var simverselect=document.createElement("SELECT")
+    simverselect.id="sim_verSet"
+    simverselect.name="sim_versionSet"
+    simverselect.setAttribute("onchange","updatePreview();DoANASetQuery();MakeCheckButton();");
+    form.appendChild(simverselect)
     form.appendChild(verFAQ)
     form.appendChild(document.createElement("BR"))
 
@@ -1092,7 +1404,7 @@ function MakeGluexForm()
 
 //RUN NUMBER/RANGE AND EVENTS
     var Runlabel=document.createElement("LABEL");
-    Runlabel.setAttribute("for", "verSet");
+    Runlabel.setAttribute("for", "recon_verSet");
     Runlabel.appendChild(document.createTextNode("Run"))
 
     form.appendChild(Runlabel)
@@ -1285,6 +1597,56 @@ function MakeGluexForm()
     form.appendChild(document.createElement("BR"))
     //form.appendChild(document.createElement("BR"))
 
+    // ELECTRON BEAM ENERGY
+    
+    var eBeamEnergyLabel=document.createElement("LABEL");
+    eBeamEnergyLabel.setAttribute("for", "eBeamEnergyOption");
+    eBeamEnergyLabel.id="eBeamEnergyLabel"
+    eBeamEnergyLabel.appendChild(document.createTextNode("Electron Beam Energy:"))
+    form.appendChild(eBeamEnergyLabel)
+    
+    var eBeamEnergySelect=document.createElement("SELECT")
+    eBeamEnergySelect.id="eBeamEnergyOption"
+    eBeamEnergySelect.name="eBeamEnergyOption"
+    eBeamEnergySelect.setAttribute("onchange","updateEBeamEnergy();MakeCheckButton();");
+    form.appendChild(eBeamEnergySelect)
+    
+    populateEBeamEnergy("GlueX")
+    
+    var ebeam_br1 = document.createElement("BR")
+    ebeam_br1.id="eBeamEnergy_br1"
+    eBeamEnergyLabel.parentNode.insertBefore(ebeam_br1, eBeamEnergyLabel)
+    
+    var ebeam_br2 = document.createElement("BR")
+    ebeam_br2.id="eBeamEnergy_br2"
+    eBeamEnergySelect.parentNode.insertBefore(ebeam_br2, eBeamEnergySelect.nextSibling)
+
+    // ELECTRON BEAM CURRENT
+    
+    var eBeamCurrentLabel=document.createElement("LABEL");
+    eBeamCurrentLabel.setAttribute("for", "eBeamCurrentOption");
+    eBeamCurrentLabel.id="eBeamCurrentLabel"
+    eBeamCurrentLabel.appendChild(document.createTextNode("Electron Beam Current:"))
+    form.appendChild(eBeamCurrentLabel)
+    
+    var eBeamCurrentSelect=document.createElement("SELECT")
+    eBeamCurrentSelect.id="eBeamCurrentOption"
+    eBeamCurrentSelect.name="eBeamCurrentOption"
+    eBeamCurrentSelect.setAttribute("onchange","updateEBeamCurrent();MakeCheckButton();");
+    form.appendChild(eBeamCurrentSelect)
+    
+    populateEBeamCurrent("GlueX")
+    
+    form.appendChild(document.createElement("BR"))
+    
+    var ecur_br1 = document.createElement("BR")
+    ecur_br1.id="eBeamCurrent_br1"
+    eBeamCurrentLabel.parentNode.insertBefore(ecur_br1, eBeamCurrentLabel)
+    
+    var ecur_br2 = document.createElement("BR")
+    ecur_br2.id="eBeamCurrent_br2"
+    eBeamCurrentSelect.parentNode.insertBefore(ecur_br2, eBeamCurrentSelect.nextSibling)
+
     //GENERATOR POST-PROCESSING
     var genpostlabel=document.createElement("LABEL");
     genpostlabel.setAttribute("for", "GenPost");
@@ -1446,6 +1808,9 @@ function MakeGluexForm()
     form.appendChild(document.createTextNode("Run Reconstruction"))
 
     form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createTextNode(" The following flags affect only .hddm files. Thrown trees are always saved."))
+    form.appendChild(document.createElement("BR"))
 
     var sgen=document.createElement("INPUT");
     sgen.type="checkbox"
@@ -1524,7 +1889,7 @@ function MakeJEFForm()
     var recselect=document.createElement("SELECT")
     recselect.id="recon_stack"
     recselect.name="halld_recon_ver"
-    recselect.setAttribute("onchange","DoSimQuery();MakeCheckButton();");
+    recselect.setAttribute("onchange","DoReconSetQuery();MakeCheckButton();");
     form.appendChild(recselect)
     verFAQ2=verFAQ.cloneNode()
     verFAQ2.onclick = function() {
@@ -1534,6 +1899,24 @@ function MakeJEFForm()
     form.appendChild(verFAQ2)
     form.appendChild(document.createElement("BR"))
 
+    var reconverlabel=document.createElement("LABEL");
+    reconverlabel.setAttribute("for", "recon_verSet");
+    reconverlabel.appendChild(document.createTextNode("recon version Set:"))
+    form.appendChild(reconverlabel)
+    var reconverselect=document.createElement("SELECT")
+    reconverselect.id="recon_verSet"
+    reconverselect.name="recon_versionSet"
+    reconverselect.setAttribute("onchange","updatePreview();MakeCheckButton();");
+    form.appendChild(reconverselect)
+    verFAQ3=verFAQ.cloneNode()
+    verFAQ3.onclick = function() {
+        window.open('https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form',"_blank")
+    };
+    form.appendChild(verFAQ3)
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+
     var simlabel=document.createElement("LABEL");
     simlabel.setAttribute("for", "sim_ver");
     simlabel.appendChild(document.createTextNode("halld_sim version:"))
@@ -1541,26 +1924,25 @@ function MakeJEFForm()
     var simselect=document.createElement("SELECT")
     simselect.id="sim_ver"
     simselect.name="halld_sim_ver"
-    simselect.setAttribute("onchange","DoSetQuery();MakeCheckButton();");
+    simselect.setAttribute("onchange","DoSimSetQuery();MakeCheckButton();");
     form.appendChild(simselect)
-    verFAQ3=verFAQ.cloneNode()
-    verFAQ3.onclick = function() {
+    verFAQ4=verFAQ.cloneNode()
+    verFAQ4.onclick = function() {
         window.open('https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form',"_blank")
     //window.location.href = 'https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form';
     };
-    form.appendChild(verFAQ3)
+    form.appendChild(verFAQ4)
     form.appendChild(document.createElement("BR"))
 
-    var verlabel=document.createElement("LABEL");
-    verlabel.setAttribute("for", "verSet");
-    verlabel.appendChild(document.createTextNode("version Set:"))
-    form.appendChild(verlabel)
-    var verselect=document.createElement("SELECT")
-    verselect.id="verSet"
-    verselect.name="versionSet"
-    verselect.setAttribute("onchange","updatePreview();DoANASetQuery();MakeCheckButton();");
-    //verselect.onchange="updatePreview();MakeCheckButton()"
-    form.appendChild(verselect)
+    var simverlabel=document.createElement("LABEL");
+    simverlabel.setAttribute("for", "sim_verSet");
+    simverlabel.appendChild(document.createTextNode("sim version Set:"))
+    form.appendChild(simverlabel)
+    var simverselect=document.createElement("SELECT")
+    simverselect.id="sim_verSet"
+    simverselect.name="sim_versionSet"
+    simverselect.setAttribute("onchange","updatePreview();DoANASetQuery();MakeCheckButton();");
+    form.appendChild(simverselect)
     form.appendChild(verFAQ)
     form.appendChild(document.createElement("BR"))
 
@@ -1574,7 +1956,7 @@ function MakeJEFForm()
 
 //RUN NUMBER/RANGE AND EVENTS
     var Runlabel=document.createElement("LABEL");
-    Runlabel.setAttribute("for", "verSet");
+    Runlabel.setAttribute("for", "recon_verSet");
     Runlabel.appendChild(document.createTextNode("Run"))
 
     form.appendChild(Runlabel)
@@ -1857,6 +2239,9 @@ function MakeJEFForm()
     form.appendChild(document.createTextNode("Run Reconstruction"))
 
     form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createTextNode(" The following flags affect only .hddm files. Thrown trees are always saved."))
+    form.appendChild(document.createElement("BR"))
 
     var sgen=document.createElement("INPUT");
     sgen.type="checkbox"
@@ -1935,7 +2320,7 @@ function MakeCPPForm()
     var recselect=document.createElement("SELECT")
     recselect.id="recon_stack"
     recselect.name="halld_recon_ver"
-    recselect.setAttribute("onchange","DoSimQuery();MakeCheckButton();");
+    recselect.setAttribute("onchange","DoReconSetQuery();MakeCheckButton();");
     form.appendChild(recselect)
     verFAQ2=verFAQ.cloneNode()
     verFAQ2.onclick = function() {
@@ -1945,6 +2330,24 @@ function MakeCPPForm()
     form.appendChild(verFAQ2)
     form.appendChild(document.createElement("BR"))
 
+    var reconverlabel=document.createElement("LABEL");
+    reconverlabel.setAttribute("for", "recon_verSet");
+    reconverlabel.appendChild(document.createTextNode("recon version Set:"))
+    form.appendChild(reconverlabel)
+    var reconverselect=document.createElement("SELECT")
+    reconverselect.id="recon_verSet"
+    reconverselect.name="recon_versionSet"
+    reconverselect.setAttribute("onchange","updatePreview();MakeCheckButton();");
+    form.appendChild(reconverselect)
+    verFAQ3=verFAQ.cloneNode()
+    verFAQ3.onclick = function() {
+        window.open('https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form',"_blank")
+    };
+    form.appendChild(verFAQ3)
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+
     var simlabel=document.createElement("LABEL");
     simlabel.setAttribute("for", "sim_ver");
     simlabel.appendChild(document.createTextNode("halld_sim version:"))
@@ -1952,21 +2355,27 @@ function MakeCPPForm()
     var simselect=document.createElement("SELECT")
     simselect.id="sim_ver"
     simselect.name="halld_sim_ver"
-    simselect.setAttribute("onchange","DoSetQuery();MakeCheckButton();");
+    simselect.setAttribute("onchange","DoSimSetQuery();MakeCheckButton();");
     form.appendChild(simselect)
-
+    verFAQ4=verFAQ.cloneNode()
+    verFAQ4.onclick = function() {
+        window.open('https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form',"_blank")
+    //window.location.href = 'https://halldweb.jlab.org/wiki/index.php/How_to_choose_software_versions_on_the_MC_submission_form';
+    };
+    form.appendChild(verFAQ4)
     form.appendChild(document.createElement("BR"))
 
-    var verlabel=document.createElement("LABEL");
-    verlabel.setAttribute("for", "verSet");
-    verlabel.appendChild(document.createTextNode("version Set:"))
-    form.appendChild(verlabel)
-    var verselect=document.createElement("SELECT")
-    verselect.id="verSet"
-    verselect.name="versionSet"
-    verselect.setAttribute("onchange","updatePreview();MakeCheckButton();");
-    //verselect.onchange="updatePreview();MakeCheckButton()"
-    form.appendChild(verselect)
+    var simverlabel=document.createElement("LABEL");
+    simverlabel.setAttribute("for", "sim_verSet");
+    simverlabel.appendChild(document.createTextNode("sim version Set:"))
+    form.appendChild(simverlabel)
+    var simverselect=document.createElement("SELECT")
+    simverselect.id="sim_verSet"
+    simverselect.name="sim_versionSet"
+    simverselect.setAttribute("onchange","updatePreview();DoANASetQuery();MakeCheckButton();");
+    form.appendChild(simverselect)
+    form.appendChild(verFAQ)
+    form.appendChild(document.createElement("BR"))
 
     DoReconQuery();
 
@@ -1977,7 +2386,7 @@ function MakeCPPForm()
 
 //RUN NUMBER/RANGE AND EVENTS
     var Runlabel=document.createElement("LABEL");
-    Runlabel.setAttribute("for", "verSet");
+    Runlabel.setAttribute("for", "recon_verSet");
     Runlabel.appendChild(document.createTextNode("Run"))
     form.appendChild(Runlabel)
     var runselect=document.createElement("SELECT")
@@ -2241,6 +2650,9 @@ function MakeCPPForm()
     form.appendChild(document.createTextNode("Run Reconstruction"))
 
     form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createElement("BR"))
+    form.appendChild(document.createTextNode(" The following flags affect only .hddm files. Thrown trees are always saved."))
+    form.appendChild(document.createElement("BR"))
 
     var sgen=document.createElement("INPUT");
     sgen.type="checkbox"
@@ -2462,9 +2874,17 @@ function MakeCheckButton()
 
             }
 
-            var generator_name=$("#generator option:selected")[0].value
-            var selected_version=$("#verSet option:selected")[0].value
-            var selected_background=$("#bkg option:selected")[0].value
+            var generator_ele = $("#generator option:selected")[0];
+            var generator_name = generator_ele ? generator_ele.value : "";
+            
+            var version_ele = $("#verSet option:selected")[0];
+            var selected_version = version_ele ? version_ele.value : "";
+            
+            var simversion_ele = $("#sim_verSet option:selected")[0];
+            var selected_simversion = simversion_ele ? simversion_ele.value : "";
+            
+            var background_ele = $("#bkg option:selected")[0];
+            var selected_background = background_ele ? background_ele.value : "";
 
             var chosen_randomtag=""
             var randomtag_ele=document.getElementById("randomtag")
@@ -2475,8 +2895,8 @@ function MakeCheckButton()
 
 
 
-        console.log("./php/checkForMC.php?generator="+generator_name+"&versionSet="+selected_version+"&bkg="+selected_background+"&randomtag="+chosen_randomtag)
-        xmlhttp.open("GET","./php/checkForMC.php?generator="+generator_name+"&versionSet="+selected_version+"&bkg="+selected_background+"&randomtag="+chosen_randomtag);
+        console.log("./php/checkForMC.php?generator="+generator_name+"&versionSet="+selected_version+"&simVersionSet="+selected_simversion+"&bkg="+selected_background+"&randomtag="+chosen_randomtag)
+        xmlhttp.open("GET","./php/checkForMC.php?generator="+generator_name+"&versionSet="+selected_version+"&simVersionSet="+selected_simversion+"&bkg="+selected_background+"&randomtag="+chosen_randomtag);
 
 
         xmlhttp.send();
@@ -2583,17 +3003,17 @@ function populateGenerators(exp)
     if(exp=="CPP")
     {
         defgen="gen_2pi_primakoff"
-        Gens=["genr8","bggen","gen_2pi_amp","gen_2pi_primakoff","gen_pi0","particle_gun","gen_amp","gen_omegapi"]//,"file:"]
+        Gens=["genr8","bggen","gen_2pi_amp","gen_2pi_primakoff","gen_pi0","particle_gun","gen_amp","gen_amp_V2","gen_omegapi"]//,"file:"]
     }
     else if(exp=="JEF")
     {
         defgen="genEtaRegge"
-        Gens=["genr8","bggen","gen_amp","genEtaRegge"]//,"file:"]
+        Gens=["genr8","bggen","gen_amp","gen_amp_V2","genEtaRegge"]//,"file:"]
     }
     else
     {
         defgen="bggen"
-        Gens = ["genr8","bggen","genEtaRegge","gen_2pi_primakoff","gen_pi0","bggen_jpsi","bggen_upd","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_amp","gen_omegapi","mc_gen","geantBEAM","gen_vec_ps"]//,"file:"]
+        Gens = ["genr8","bggen","genEtaRegge","gen_2pi_primakoff","gen_pi0","bggen_jpsi","bggen_upd","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_amp","gen_amp_V2","gen_omegapi","mc_gen","geantBEAM","gen_vec_ps","python","gen_primex_eta_he4","gen_generic_root"]//,"file:"]
         //Gens = ["genr8","bggen","genEtaRegge","gen_2pi_amp","gen_2pi_primakoff","gen_pi0","gen_omega_3pi","gen_2k","bggen_jpsi","bggen_upd","gen_ee","gen_ee_hb","bggen_phi_ee","particle_gun","genBH","gen_omega_radiative","gen_amp","file:"]
     }
 
@@ -2675,6 +3095,90 @@ function addANAselector()
 
     }
 }
+
+function populateEBeamEnergy(exp)
+{
+    var eBeamEnergySelect=document.getElementById("eBeamEnergyOption");
+    var eBeamEnergySelect_options=["RCDB","Custom"]
+    eBeamEnergySelect_options.forEach(function(element) {
+        var sel=false;
+        if(element=="RCDB")
+        {
+            sel=true;
+        }
+        MakeOption(eBeamEnergySelect,element,sel)
+    });
+}
+function updateEBeamEnergy()
+{
+    var sel=document.getElementById("eBeamEnergyOption");
+    var sel_val=document.getElementById("eBeamEnergyOption").value;
+    
+    if(sel_val==="Custom")
+    {
+        var eBeamEnergy=document.createElement("INPUT")
+        eBeamEnergy.type="number"
+        eBeamEnergy.step="0.001"
+        eBeamEnergy.id="eBeamE"
+        eBeamEnergy.name="eBeamE"
+        eBeamEnergy.placeholder="11.7 [GeV]"
+        eBeamEnergy.required=true;
+        eBeamEnergy.title="Electron beam energy to simulate."
+        eBeamEnergy.style.width="24%";
+        //form.appendChild(eBeamEnergy);
+        
+        sel.parentNode.insertBefore(eBeamEnergy,sel.nextSibling)
+    }
+    else if(sel_val=="RCDB")
+    {
+        if(document.getElementById("eBeamE"))
+        {
+            removeElementByID("eBeamE");
+        }
+    }
+}
+
+function populateEBeamCurrent(exp)
+{
+    var eBeamCurrentSelect=document.getElementById("eBeamCurrentOption");
+    var eBeamCurrentSelect_options=["RCDB","Custom"]
+    eBeamCurrentSelect_options.forEach(function(element) {
+        var sel=false;
+        if(element=="RCDB")
+        {
+            sel=true;
+        }
+        MakeOption(eBeamCurrentSelect,element,sel)
+    });
+}
+function updateEBeamCurrent()
+{
+    var sel=document.getElementById("eBeamCurrentOption");
+    var sel_val=document.getElementById("eBeamCurrentOption").value;
+    
+    if(sel_val==="Custom")
+    {
+        var eBeamCurrent=document.createElement("INPUT")
+        eBeamCurrent.type="number"
+        eBeamCurrent.step="0.001"
+        eBeamCurrent.id="eBeamI"
+        eBeamCurrent.name="eBeamI"
+        eBeamCurrent.placeholder="0.3 [uA]"
+        eBeamCurrent.required=true;
+        eBeamCurrent.title="Electron beam current to simulate (in microamps)."
+        eBeamCurrent.style.width="24%";
+        
+        sel.parentNode.insertBefore(eBeamCurrent,sel.nextSibling)
+    }
+    else if(sel_val=="RCDB")
+    {
+        if(document.getElementById("eBeamI"))
+        {
+            removeElementByID("eBeamI");
+        }
+    }
+}
+
 function updateGenPost()
 {
     
@@ -2756,7 +3260,7 @@ function updateBKGoptions()
             document.getElementById("randomtag").replaceWith(randomtag)
 
             document.getElementById("randomtag").style.width="38%"
-            randtags=["recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01","recon-2019_11-ver01","workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
+            randtags=["recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01.2","recon-2019_11-ver01","recon-2019_11-ver01.2","recon-2021_08-ver01","recon-2021_11-ver01", "recon-2022_08-ver01", "recon-2023-01-ver04", "recon-2025_01-ver03", "workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
 
             randtags.forEach(function(element) {
                 halld_reconVer=document.getElementById("recon_stack")
@@ -3023,7 +3527,7 @@ function PopulateVer(id,result)
     for(var i=0;i<result.length;i++)
     {
 
-        if(id=="verSet" && result[i].version=="version_4.45.1.xml")
+        if(id=="recon_verSet" && result[i].version=="version_4.45.1.xml")
         {
             continue
         }
@@ -3056,11 +3560,20 @@ function PopulateVer(id,result)
         {
             newoption.selected=true;
         }
-        else if(i==0)
+        else if(i==0 && id != "sim_ver")
         {
             newoption.selected=true;
         }
     }
+	// Temporarily add in the most recent version set so people can emulate analysis launches on new data sets. 
+	//  e.g. 2025-01 has no 'analysis' version set at the time of writing (3/17/26)
+	if(id == "anaverSet")
+	{
+		var newoption = document.createElement("option");
+		newoption.text = "version_7.5.0.xml";
+		newoption.value = "version_7.5.0.xml";
+		reconSel.add(newoption);
+	}
 }
 function removeOptions(selectbox)
 {
@@ -3090,13 +3603,15 @@ function updatePreview()
 
    // window.setTimeout(2005);
 
-    var e = document.getElementById("verSet");
-    var selSet = e.options[e.selectedIndex].text;
-
-    document.getElementById("setpreview").className="run-bounceInDown"
-    rightDIV.style.animationName="bounceInDown";
-    rightDIV.className="run-bounceInDown"
-    document.getElementById("setpreview").data="https://halldweb.jlab.org/halld_versions/"+selSet;
+    // Use sim_verSet for preview (primary version set for simulation)
+    var e = document.getElementById("sim_verSet");
+    if(e && e.selectedIndex >= 0) {
+        var selSet = e.options[e.selectedIndex].text;
+        document.getElementById("setpreview").className="run-bounceInDown"
+        rightDIV.style.animationName="bounceInDown";
+        rightDIV.className="run-bounceInDown"
+        document.getElementById("setpreview").data="https://halldweb.jlab.org/halld_versions/"+selSet;
+    }
 
 }
 function DoReconQuery()
@@ -3128,6 +3643,7 @@ function DoReconQuery()
                     }
 
                 }
+                DoReconSetQuery()
                 DoSimQuery()
 
                 }
@@ -3141,7 +3657,7 @@ function DoReconQuery()
 
         xmlhttp.send();
 }
-function DoSimQuery()
+function DoReconSetQuery()
     {
         var e = document.getElementById("recon_stack");
         var selRecon = e.options[e.selectedIndex].value;
@@ -3161,13 +3677,13 @@ function DoSimQuery()
                 result=JSON.parse(this.responseText);
 
                 console.log(result)
-                PopulateVer("sim_ver",result)
+                PopulateVer("recon_verSet",result)
 
                 if(document.getElementById("prefill").value != "-1" )
                 {
-                MakeSelectedByValue(document.getElementById("sim_ver"),project.sim_ver)
+                MakeSelectedByValue(document.getElementById("recon_verSet"),project.VersionSet)
                 }
-                DoSetQuery()
+                updatePreview();
 
                 }
 
@@ -3175,8 +3691,161 @@ function DoSimQuery()
             query_to_do="SELECT DISTINCT"
 
 
-        console.log("./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown")
-        xmlhttp.open("GET","./php/versionFinder.php?recon_ver="+selRecon+"&sim_ver=unknown");
+        console.log("./php/versionFinder.php?package=halld_recon&version="+selRecon+"&query=versionsets")
+        xmlhttp.open("GET","./php/versionFinder.php?package=halld_recon&version="+selRecon+"&query=versionsets");
+
+
+        xmlhttp.send();
+}
+function compareVersions(a, b) {
+    // Parse version strings like "4.28.0p1" into components
+    // Format: major.minor.patch[p<patch_num>]
+    
+    function parseVersion(ver) {
+        // Handle special cases like "master"
+        if (ver === "master" || ver === null || ver === undefined) {
+            return { major: 999999, minor: 0, patch: 0, patchNum: 0, original: ver };
+        }
+        
+        // Match pattern: major.minor.patch (optional p<num>)
+        var match = ver.match(/^(\d+)\.(\d+)\.(\d+)(?:p(\d+))?/);
+        if (match) {
+            return {
+                major: parseInt(match[1]),
+                minor: parseInt(match[2]),
+                patch: parseInt(match[3]),
+                patchNum: match[4] ? parseInt(match[4]) : 0,
+                original: ver
+            };
+        }
+        
+        // If it doesn't match, put it at the end
+        return { major: 0, minor: 0, patch: 0, patchNum: 0, original: ver };
+    }
+    
+    var verA = parseVersion(a.version);
+    var verB = parseVersion(b.version);
+    
+    // Compare major version
+    if (verA.major !== verB.major) return verB.major - verA.major;
+    // Compare minor version
+    if (verA.minor !== verB.minor) return verB.minor - verA.minor;
+    // Compare patch version
+    if (verA.patch !== verB.patch) return verB.patch - verA.patch;
+    // Compare patch number (p1, p2, etc)
+    return verB.patchNum - verA.patchNum;
+}
+function DoSimQuery()
+    {
+        if (window.XMLHttpRequest) {
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        } else {
+            // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+
+                result=JSON.parse(this.responseText);
+
+                console.log("DoSimQuery result:", result)
+                
+                // Sort versions properly before populating
+                result.sort(compareVersions);
+                
+                console.log("After sorting:", result)
+                
+                PopulateVer("sim_ver",result)
+
+                if(document.getElementById("prefill").value != "-1" )
+                {
+                console.log("Using prefill sim version:", project.sim_ver)
+                MakeSelectedByValue(document.getElementById("sim_ver"),project.sim_ver)
+                }
+                else if(result.length > 0)
+                {
+                // Select the first (latest) non-master version by default
+                var defaultVersion = result[0].version;
+                for(var i = 0; i < result.length; i++) {
+                    // Check for both null (database representation) and "master" string
+                    if(result[i].version !== "master" && result[i].version !== null && result[i].version !== undefined) {
+                        defaultVersion = result[i].version;
+                        console.log("Selecting default sim version:", defaultVersion)
+                        break;
+                    }
+                }
+                console.log("Final defaultVersion:", defaultVersion)
+                MakeSelectedByValue(document.getElementById("sim_ver"),defaultVersion)
+                }
+                else
+                {
+                console.log("No sim versions found in result")
+                }
+                DoSimSetQuery()
+
+                }
+
+            }
+            query_to_do="SELECT DISTINCT"
+
+
+        console.log("./php/versionFinder.php?sim_ver=unknown")
+        xmlhttp.open("GET","./php/versionFinder.php?sim_ver=unknown");
+
+
+        xmlhttp.send();
+}
+function DoSimSetQuery()
+    {
+        var e = document.getElementById("sim_ver");
+        var selSim = e.options[e.selectedIndex].value;
+
+
+        if (window.XMLHttpRequest) {
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        } else {
+            // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+
+                result=JSON.parse(this.responseText);
+
+                console.log(result)
+                PopulateVer("sim_verSet",result)
+
+                if(document.getElementById("prefill").value != "-1" )
+                {
+                MakeSelectedByValue(document.getElementById("sim_verSet"),project.SimVersionSet)
+                }
+                else if(result.length > 0)
+                {
+                // Select first version set by default
+                MakeSelectedByValue(document.getElementById("sim_verSet"),result[0].version)
+                }
+                updatePreview();
+                if(document.getElementById("ReactionLines").value != "" && document.getElementById("prefill").value != "-1" && !document.getElementById("anaverSet"))
+                {
+                addANAselector()
+                }
+                else if(document.getElementById("anaverSet"))
+                {
+                    DoANASetQuery();
+                }
+
+                }
+
+            }
+            query_to_do="SELECT DISTINCT"
+
+
+        console.log("./php/versionFinder.php?package=halld_sim&version="+selSim+"&query=versionsets")
+        xmlhttp.open("GET","./php/versionFinder.php?package=halld_sim&version="+selSim+"&query=versionsets");
 
 
         xmlhttp.send();
@@ -3203,11 +3872,11 @@ function DoSetQuery()
                 result=JSON.parse(this.responseText);
 
                 console.log(result)
-                PopulateVer("verSet",result)
+                PopulateVer("recon_verSet",result)
                 if(document.getElementById("prefill").value != "-1" )
                 {
 
-                MakeSelectedByValue(document.getElementById("verSet"),project.VersionSet)
+                MakeSelectedByValue(document.getElementById("recon_verSet"),project.VersionSet)
                 }
 
                 updatePreview();
@@ -3243,7 +3912,7 @@ function DoANASetQuery()
         var sims = document.getElementById("sim_ver");
         var selSim = sims.options[sims.selectedIndex].value;
 
-        var vers = document.getElementById("verSet");
+        var vers = document.getElementById("recon_verSet");
         var selVer = vers.options[vers.selectedIndex].value;
 
         if (window.XMLHttpRequest) {

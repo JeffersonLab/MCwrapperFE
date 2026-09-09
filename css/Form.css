@@ -3,6 +3,15 @@ body
 {
     background-color: black;
 }
+
+.run-period-label {
+    display: inline-block;      /* allow width/height settings */
+    height: 40px !important;               /* set a fixed height */
+    line-height: 1.4;           /* spacing inside the label */
+    vertical-align: top;        /* aligns with radio button nicely */
+    font-size: 13px !important;
+}
+
 .switch-field {
     font-family: "Lucida Grande", Tahoma, Verdana, sans-serif;
     padding: 0px;

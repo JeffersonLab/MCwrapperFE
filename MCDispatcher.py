@@ -985,6 +985,7 @@ def DispatchToSWIF(ID,order,PERCENT):
 
 def WriteConfig(ID):
     query = "SELECT * FROM Project WHERE ID="+str(ID)
+    print(query)
     curs.execute(query) 
     rows=curs.fetchall()
     #print(rows)
@@ -1011,6 +1012,11 @@ def WritePayloadConfig(order,foundConfig,jobID=-1):
         MCconfig_file.write("eBEAM_CURRENT=0.35"+"\n")
         MCconfig_file.write("RADIATOR_THICKNESS=50.e-06"+"\n")
         MCconfig_file.write("COHERENT_PEAK=8.6"+"\n")
+
+    if str(order["VersionSet"]) == "recon-2017_01-ver05.xml":
+        MCconfig_file.write("VARIATION=mc_2017_01_ver05"+"\n")
+        MCconfig_file.write("RECON_VERSION=mc_2017_01_ver05"+"\n")
+        MCconfig_file.write("ANA_VERSION=mc_2017_01_ver05"+"\n")
 
     splitlist=order["OutputLocation"].split("/")
     MCconfig_file.write("WORKFLOW_NAME="+splitlist[len(splitlist)-2]+"\n")
@@ -1117,7 +1123,13 @@ def WritePayloadConfig(order,foundConfig,jobID=-1):
     
     if(query_to_do != ""):
         MCconfig_file.write("RCDB_QUERY="+query_to_do+"\n")
-
+    
+    if(order["eBeamEnergy"] != None):
+        MCconfig_file.write("eBEAM_ENERGY="+str(order["eBeamEnergy"])+"\n")
+    
+    if(order["eBeamCurrent"] != None):
+        MCconfig_file.write("eBEAM_CURRENT="+str(order["eBeamCurrent"])+"\n")
+    
     if(order["ReactionLines"] != ""):
         if(order["ReactionLines"][0:5] == "file:"):
             jana_config_file=order["ReactionLines"][5:]
@@ -1169,6 +1181,12 @@ def WritePayloadConfig(order,foundConfig,jobID=-1):
     if(order["ANAVersionSet"] != None and order["ANAVersionSet"] != "None" ):
         print("ADDING ANNAVER")
         MCconfig_file.write("ANA_ENVIRONMENT_FILE=/group/halld/www/halldweb/html/halld_versions/"+str(order["ANAVersionSet"])+"\n")
+        print("ADDED ANNAVER")
+    print("adding simver if needed...")
+    if(order["SimVersionSet"] != None and order["SimVersionSet"] != "None" ):
+        print("ADDING SIMVER")
+        MCconfig_file.write("SIM_ENVIRONMENT_FILE=/group/halld/www/halldweb/html/halld_versions/"+str(order["SimVersionSet"])+"\n")
+        print("ADDED SIMVER")
     MCconfig_file.close()
 
 def DispatchToOSG(ID,order,PERCENT):
@@ -1230,6 +1248,11 @@ def WritePayloadConfigString(order,foundConfig):
         config_str+="RADIATOR_THICKNESS=50.e-06"+"\n"
         config_str+="COHERENT_PEAK=8.6"+"\n"    
 
+    if str(order["VersionSet"]) == "recon-2017_01-ver05.xml":
+        config_str+="VARIATION=mc_2017_01_ver05"+"\n"
+        config_str+="RECON_VERSION=mc_2017_01_ver05"+"\n"
+        config_str+="ANA_VERSION=mc_2017_01_ver05"+"\n"
+
     splitlist=order["OutputLocation"].split("/")
     config_str+="WORKFLOW_NAME="+splitlist[len(splitlist)-2]+"\n"
     config_str+=order["Config_Stub"]+"\n"
@@ -1286,19 +1309,26 @@ def WritePayloadConfigString(order,foundConfig):
 
     if(order["RunNumLow"] != order["RunNumHigh"]):
         query_to_do="@is_production and @status_approved"
-
+        
         if("recon-2018" in order["VersionSet"]):
             query_to_do="@is_2018production and @status_approved"
-
+        
         if("recon-2019" in order["VersionSet"]):
             query_to_do="@is_dirc_production and @status_approved"
-    
+        
         if(order["RCDBQuery"] != ""):
             query_to_do=order["RCDBQuery"]
-
-    config_str+="RCDB_QUERY="+query_to_do+"\n"
         
-
+        config_str+="RCDB_QUERY="+query_to_do+"\n"
+    
+    if(order["eBeamEnergy"] != None):
+        config_str+="eBEAM_ENERGY="+str(order["eBeamEnergy"])+"\n"
+    #else:
+    #    print("\nELECTRON BEAM ENERGY SET TO 'RCDB'\n")
+    
+    if(order["eBeamCurrent"] != None):
+        config_str+="eBEAM_CURRENT="+str(order["eBeamCurrent"])+"\n"
+    
     if(order["ReactionLines"] != ""):
         if(order["ReactionLines"][0:5] != "file:"):
             #jana_config_file=open("/osgpool/halld/tbritton/REQUESTEDMC_CONFIGS/"+str(order["ID"])+"_jana.config","w")
@@ -1313,6 +1343,8 @@ def WritePayloadConfigString(order,foundConfig):
 
     
     config_str+="ENVIRONMENT_FILE=/group/halld/www/halldweb/html/halld_versions/"+str(order["VersionSet"])+"\n"
+    if(order["SimVersionSet"] != None and order["SimVersionSet"] != "None" ):
+        config_str+="SIM_ENVIRONMENT_FILE=/group/halld/www/halldweb/html/halld_versions/"+str(order["SimVersionSet"])+"\n"
     #print("ADD ANAVER TO PAYLOAD?")
     #print(str(order["ANAVersionSet"]))
     if(order["ANAVersionSet"] != None and order["ANAVersionSet"] != "None" ):

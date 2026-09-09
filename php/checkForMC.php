@@ -21,6 +21,11 @@ if ( $_GET["randomtag"] != "" && $_GET["bkg"] != "loc" )
 $sql = "SELECT * FROM Project where Generator=\"" . $_GET["generator"] . "\" && VersionSet=\"" . $_GET["versionSet"] . "\"";
 $sql = $sql . " && BKG=\"" . $bkg ."\"";
 
+// Add simVersionSet to query if provided (optional for backward compatibility)
+if (isset($_GET["simVersionSet"]) && $_GET["simVersionSet"] != "") {
+    $sql = $sql . " && SimVersionSet=\"" . $_GET["simVersionSet"] . "\"";
+}
+
 //echo $sql;
 //echo "<br>";
 
