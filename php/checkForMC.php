@@ -18,18 +18,22 @@ if ( $_GET["randomtag"] != "" && $_GET["bkg"] != "loc" )
     $bkg = $bkg . ":" . $_GET["randomtag"];
 }
 
-$sql = "SELECT * FROM Project where Generator=\"" . $_GET["generator"] . "\" && VersionSet=\"" . $_GET["versionSet"] . "\"";
-$sql = $sql . " && BKG=\"" . $bkg ."\"";
+$sql = "SELECT * FROM Project where Generator=? && VersionSet=? && BKG=?";
+$params = array($_GET["generator"], $_GET["versionSet"], $bkg);
 
 // Add simVersionSet to query if provided (optional for backward compatibility)
 if (isset($_GET["simVersionSet"]) && $_GET["simVersionSet"] != "") {
-    $sql = $sql . " && SimVersionSet=\"" . $_GET["simVersionSet"] . "\"";
+    $sql = $sql . " && SimVersionSet=?";
+    $params[] = $_GET["simVersionSet"];
 }
 
 //echo $sql;
 //echo "<br>";
 
-$result = $conn->query($sql);
+$stmt = $conn->prepare($sql);
+$stmt->bind_param(str_repeat("s", count($params)), ...$params);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $data = array();
 if ($result->num_rows > 0) {

@@ -76,10 +76,11 @@ function FullProjectReset($conn)
     }
 
     //echo "<br> In FullReset()<br>";
-    $sql = "DELETE FROM Attempts where Job_ID in ( SELECT ID FROM Jobs WHERE Project_ID=" . $_GET["projID"]." );";
+    $projID = intval($_GET["projID"]);
+    $sql = "DELETE FROM Attempts where Job_ID in ( SELECT ID FROM Jobs WHERE Project_ID=" . $projID." );";
     //echo $sql;
-    $sql2 = "DELETE FROM Jobs WHERE Project_ID=" . $_GET["projID"].";";
-    $sql3 = "UPDATE Project SET Is_Dispatched='0',Completed_Time=NULL,Dispatched_Time=NULL WHERE ID=" . $_GET["projID"].";";
+    $sql2 = "DELETE FROM Jobs WHERE Project_ID=" . $projID.";";
+    $sql3 = "UPDATE Project SET Is_Dispatched='0',Completed_Time=NULL,Dispatched_Time=NULL WHERE ID=" . $projID.";";
 
     $result = $conn->query($sql);
 
@@ -100,7 +101,7 @@ function RetestProject($conn)
     }
 
     //echo "<br> InTestReset()<br>";
-    $sql = "UPDATE Project Set Tested=0 WHERE ID=" . $_GET["projID"];
+    $sql = "UPDATE Project Set Tested=0 WHERE ID=" . intval($_GET["projID"]);
     //echo $sql . "<br>";
 
     $result = $conn->query($sql);
@@ -121,7 +122,7 @@ function RecallProject($conn)
     }
 
     //echo "<br> InTestReset()<br>";
-    $sql = "UPDATE Project Set Tested=2 WHERE ID=" . $_GET["projID"];
+    $sql = "UPDATE Project Set Tested=2 WHERE ID=" . intval($_GET["projID"]);
     //echo $sql . "<br>";
 
     $result = $conn->query($sql);
@@ -134,7 +135,7 @@ function RecallProject($conn)
 }
 function CopyProject()
 {
-    return "https://halldweb.jlab.org/gluex_sim/SubmitSim.html?mod=2&prefill=" . $_GET["projID"] ;
+    return "https://halldweb-rh9.jlab.org/gluex_sim/SubmitSim.html?mod=2&prefill=" . intval($_GET["projID"]) ;
    
 }
 function DeclareComplete($conn)
@@ -146,7 +147,7 @@ function DeclareComplete($conn)
     }
 
     //echo "<br> InTestReset()<br>";
-    $sql = "UPDATE Project Set Tested=4,Completed_Time=NOW() WHERE ID=" . $_GET["projID"];
+    $sql = "UPDATE Project Set Tested=4,Completed_Time=NOW() WHERE ID=" . intval($_GET["projID"]);
     //echo $sql . "<br>";
 
     $result = $conn->query($sql);
@@ -159,7 +160,7 @@ function DeclareComplete($conn)
 }
 function getMCconfig()
 {
-    $cmdstr='python /group/halld/www/halldweb/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . $_GET["projID"];
+    $cmdstr='python /group/halld/www/halldweb-rh9/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . intval($_GET["projID"]);
     $command = escapeshellcmd($cmdstr);
     #echo $command;
     #echo "<br>";
@@ -178,7 +179,8 @@ function CancelProject($conn)
     die("Connection failed: " . mysqli_connect_error());
     }
 
-    $compSQL="SELECT COUNT(ID) from Attempts where Status='4' && ExitCode=0 && Job_ID in (SELECT ID FROM Jobs where Project_ID=". $_GET["projID"] .");";
+    $projID = intval($_GET["projID"]);
+    $compSQL="SELECT COUNT(ID) from Attempts where Status='4' && ExitCode=0 && Job_ID in (SELECT ID FROM Jobs where Project_ID=". $projID .");";
 
     $result = $conn->query($compSQL);
     $row = $result->fetch_assoc();
@@ -192,7 +194,7 @@ function CancelProject($conn)
 
 
     //echo "<br> InTestReset()<br>";
-    $sql = "UPDATE Project Set Tested=3 WHERE ID=" . $_GET["projID"];
+    $sql = "UPDATE Project Set Tested=3 WHERE ID=" . $projID;
     //echo $sql . "<br>";
 
     $result = $conn->query($sql);

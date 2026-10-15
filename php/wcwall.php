@@ -6,11 +6,14 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-$sql = "SELECT wc FROM Users where name=\"" . $_SERVER['HTTP_HOST'] . "\"";
+$sql = "SELECT wc FROM Users where name=?";
 //echo $sql;
 //echo "<br>";
 
-$result = $conn->query($sql);
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $_SERVER['HTTP_HOST']);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $data = array();
 if ($result->num_rows > 0) {

@@ -5,11 +5,17 @@ require_once "readerConnection.php";
 if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
+$allowedTables = array("Jobs", "Project", "ProjectF", "Attempts", "Ticker", "RunMap");
+if (!isset($_GET["Table"]) || !in_array($_GET["Table"], $allowedTables, true)) {
+    header('Content-Type: application/json');
+    echo json_encode(array("data" => array()));
+    exit;
+}
 $sql = "SELECT * FROM " . $_GET["Table"];
 
 if ( isset($_GET["projID"]) && $_GET["Table"]=="Jobs")
 {
-    $sql=$sql . " WHERE Project_ID=" . $_GET["projID"];
+    $sql=$sql . " WHERE Project_ID=" . intval($_GET["projID"]);
 }
 
 if($_GET["Table"]=="ProjectF")
@@ -24,10 +30,31 @@ if($_GET["Table"]=="Attempts")
     //$sql="SELECT * FROM Attempts WHERE Job_ID IN (SELECT ID FROM Jobs WHERE Project_ID=" . $_GET["projID"] . ") GROUP BY Job_ID;";
     //$sql="SELECT * FROM Attempts WHERE ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=" . $_GET["projID"] . ");";
 //    $sql="SELECT Attempts.*,Max(Attempts.Creation_Time) FROM Attempts,Jobs WHERE Attempts.Job_ID = Jobs.ID && Jobs.Project_ID=" . $_GET["projID"] . " GROUP BY Attempts.Job_ID;";
-      $sql="select Attempts.*, Jobs.IsActive, Jobs.RunNumber, Jobs.NumEvts, Jobs.FileNumber, Jobs.DataVerified 
+      $dash = (isset($_GET["view"]) && $_GET["view"] == "dash");
+      $cols = $dash
+          ? "Attempts.Start_Time, Attempts.BatchJobID, Attempts.Status, Attempts.ExitCode, Attempts.ProgramFailed, Attempts.WallTime"
+          : "Attempts.*";
+      $sql="select $cols, Jobs.IsActive, Jobs.RunNumber, Jobs.NumEvts, Jobs.FileNumber, Jobs.DataVerified 
       from Jobs
       inner join Attempts on Attempts.Job_ID = Jobs.id and Attempts.id = (select max(id) from Attempts latest_attempts where latest_attempts.job_id = Jobs.id)
-      where Project_ID = " . $_GET["projID"] . " ORDER BY IsActive desc";
+      where Project_ID = " . intval($_GET["projID"]) . ($dash ? " and Jobs.IsActive = 1" : "") . " ORDER BY IsActive desc";
+
+      // stream rows: buffering a 50k-job project into an array exceeds memory_limit (HTTP 500)
+      $result = $conn->query($sql, MYSQLI_USE_RESULT);
+      $jsonFlags = defined('JSON_PARTIAL_OUTPUT_ON_ERROR') ? JSON_PARTIAL_OUTPUT_ON_ERROR : 0;
+      header('Content-Type: application/json');
+      echo '{"data":[';
+      $first = true;
+      if ($result) {
+          while ($row = $result->fetch_assoc()) {
+              echo ($first ? "" : ",") . json_encode($row, $jsonFlags);
+              $first = false;
+          }
+          $result->free();
+      }
+      echo ']}';
+      $conn->close();
+      exit;
 
 }
 if($_GET["Table"]=="Ticker")
@@ -78,7 +105,8 @@ if ($result->num_rows > 0) {
         if($_GET["Table"]=="ProjectF" && TRUE )
         {
         $count=$count+1;
-        $compq="SELECT COUNT(DISTINCT Job_ID) from Attempts where (Status=\"4\" || Status=\"succeeded\" || Status=\"44\") && ExitCode=\"0\" && Job_ID in (SELECT ID From Jobs where Project_ID=".$row["ID"]." && IsActive=1);";
+        $pid=intval($row["ID"]);
+        $compq="SELECT COUNT(DISTINCT Job_ID) from Attempts where (Status=\"4\" || Status=\"succeeded\" || Status=\"44\") && ExitCode=\"0\" && Job_ID in (SELECT ID From Jobs where Project_ID=".$pid." && IsActive=1);";
         #echo $compq;
         #echo "<br>";
         
@@ -88,16 +116,16 @@ if ($result->num_rows > 0) {
 
         #$failq="SELECT COUNT(*) FROM Attempts WHERE (Status=\"4\" && ExitCode>0) && ID IN (SELECT Max(ID) FROM Attempts GROUP BY Job_ID) && Job_ID IN (SELECT ID FROM Jobs WHERE IsActive=1 && Project_ID=".$row["ID"].");";
         #$failq="SELECT COUNT(DISTINCT Job_ID) from Attempts where (Status=\"5\" || Status=\"4\" || Status=\"problem\") && ExitCode!=\"0\" && Job_ID in (SELECT ID From Jobs where Project_ID=".$row["ID"]." && IsActive=1)# && ID in (SELECT MAX(ID) from Attempts where Job_ID in (SELECT ID from Jobs where Project_ID=".$row["ID"]." && IsActive=1) GROUP BY Job_ID);";
-        $failq="select COUNT(*) from Jobs inner join Attempts on Attempts.Job_ID = Jobs.id and Attempts.id = (select max(id) from Attempts latest_attempts where latest_attempts.job_id = Jobs.id) where Project_ID =". $row["ID"] ."&& Attempts.ExitCode>0 && Attempts.Status=4";
+        $failq="select COUNT(*) from Jobs inner join Attempts on Attempts.Job_ID = Jobs.id and Attempts.id = (select max(id) from Attempts latest_attempts where latest_attempts.job_id = Jobs.id) where Project_ID =". $pid ."&& Attempts.ExitCode>0 && Attempts.Status=4";
         #echo $failq;
         #echo "<br>";
         
         $failresult = $conn->query($failq);
 
-        $totq="SELECT COUNT(ID) From Jobs where Project_ID=".$row["ID"]." && IsActive=1";
+        $totq="SELECT COUNT(ID) From Jobs where Project_ID=".$pid." && IsActive=1";
         $totpresult = $conn->query($totq);
 
-        $totdeactq="SELECT COUNT(ID) From Jobs where Project_ID=".$row["ID"]." && IsActive=0";
+        $totdeactq="SELECT COUNT(ID) From Jobs where Project_ID=".$pid." && IsActive=0";
         $totdeactresult = $conn->query($totdeactq);
 
         #print_r( $compresult->fetch_assoc());

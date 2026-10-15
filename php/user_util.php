@@ -9,14 +9,15 @@ function RecallProject($conn)
     die("Connection failed: " . mysqli_connect_error());
     }
 
-    $usrcheck="SELECT UName FROM Project where ID=" . $_GET["projID"];
+    $projID = intval($_GET["projID"]);
+    $usrcheck="SELECT UName FROM Project where ID=" . $projID;
     $checkres=$conn->query($usrcheck);
 
     $urow = $checkres->fetch_assoc();
     if( $_SERVER['PHP_AUTH_USER'] == $urow["UName"])
     {
         //echo "<br> InTestReset()<br>";
-        $sql = "UPDATE Project Set Tested=2 WHERE ID=" . $_GET["projID"];
+        $sql = "UPDATE Project Set Tested=2 WHERE ID=" . $projID;
         //echo $sql . "<br>";
 
         $result = $conn->query($sql);
@@ -40,14 +41,15 @@ function DeclareComplete($conn)
     die("Connection failed: " . mysqli_connect_error());
     }
 
-    $usrcheck="SELECT UName FROM Project where ID=" . $_GET["projID"];
+    $projID = intval($_GET["projID"]);
+    $usrcheck="SELECT UName FROM Project where ID=" . $projID;
     $checkres=$conn->query($usrcheck);
 
     $urow = $checkres->fetch_assoc();
     if( $_SERVER['PHP_AUTH_USER'] == $urow["UName"])
     {
         //echo "<br> InTestReset()<br>";
-        $sql = "UPDATE Project Set Tested=4, Completed_Time=NOW() WHERE ID=" . $_GET["projID"];
+        $sql = "UPDATE Project Set Tested=4, Completed_Time=NOW() WHERE ID=" . $projID;
         //echo $sql . "<br>";
 
         $result = $conn->query($sql);
@@ -63,12 +65,12 @@ function DeclareComplete($conn)
 }
 function CopyProject()
 {
-    return "https://halldweb.jlab.org/gluex_sim/SubmitSim.html?mod=2&prefill=" . $_GET["projID"] ;
+    return "https://halldweb-rh9.jlab.org/gluex_sim/SubmitSim.html?mod=2&prefill=" . intval($_GET["projID"]) ;
    
 }
 function getMCconfig()
 {
-    $cmdstr='python /group/halld/www/halldweb/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . $_GET["projID"];
+    $cmdstr='python /group/halld/www/halldweb-rh9/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . intval($_GET["projID"]);
     $command = escapeshellcmd($cmdstr);
     #echo $command;
     #echo "<br>";
@@ -87,7 +89,8 @@ function CancelProject($conn)
     die("Connection failed: " . mysqli_connect_error());
     }
 
-    $usrcheck="SELECT UName FROM Project where ID=" . $_GET["projID"];
+    $projID = intval($_GET["projID"]);
+    $usrcheck="SELECT UName FROM Project where ID=" . $projID;
     $checkres=$conn->query($usrcheck);
 
     $urow = $checkres->fetch_assoc();
@@ -95,7 +98,7 @@ function CancelProject($conn)
     {
 
 
-        $compSQL="SELECT COUNT(ID) from Attempts where Status='4' && ExitCode=0 && Job_ID in (SELECT ID FROM Jobs where Project_ID=". $_GET["projID"] .");";
+        $compSQL="SELECT COUNT(ID) from Attempts where Status='4' && ExitCode=0 && Job_ID in (SELECT ID FROM Jobs where Project_ID=". $projID .");";
 
         $result = $conn->query($compSQL);
         $row = $result->fetch_assoc();
@@ -107,7 +110,7 @@ function CancelProject($conn)
         }
 
         //echo "<br> InTestReset()<br>";
-        $sql = "UPDATE Project Set Tested=3 WHERE ID=" . $_GET["projID"];
+        $sql = "UPDATE Project Set Tested=3 WHERE ID=" . $projID;
         //echo $sql . "<br>";
 
         $result = $conn->query($sql);

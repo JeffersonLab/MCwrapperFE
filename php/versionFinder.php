@@ -5,6 +5,7 @@ if (!$conn_vs) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
+$params = array();
 if( isset($_GET["package"]) && isset($_GET["query"]) && $_GET["query"] == "versionsets")
 {
     // New query format: get version sets containing a specific package version
@@ -13,11 +14,13 @@ if( isset($_GET["package"]) && isset($_GET["query"]) && $_GET["query"] == "versi
     
     if( $version == "master" )
     {
-        $sql="SELECT filename as version from versionSet where id in (SELECT DISTINCT versionSetId from version where version is NULL && packageId in (SELECT id from package where name=\"" . $package . "\")) && onOasis=1 ORDER BY filename DESC;";
+        $sql="SELECT filename as version from versionSet where id in (SELECT DISTINCT versionSetId from version where version is NULL && packageId in (SELECT id from package where name=?)) && onOasis=1 ORDER BY filename DESC;";
+        $params = array($package);
     }
     else
     {
-        $sql="SELECT filename as version from versionSet where id in (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"" . $package . "\") && version=\"" . $version . "\") && onOasis=1 && filename NOT LIKE \"analysis-%\" ORDER BY filename DESC;";
+        $sql="SELECT filename as version from versionSet where id in (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=?) && version=?) && onOasis=1 && filename NOT LIKE \"analysis-%\" ORDER BY filename DESC;";
+        $params = array($package, $version);
     }
 }
 else if( $_GET["recon_ver"] == "unknown")
@@ -39,8 +42,9 @@ else if( !isset($_GET["verSet"]) )
     else
     {
     
-    $sqlsub="SELECT DISTINCT versionSetID from version where versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_recon\") && version=\"" . $_GET["recon_ver"] . "\")" . " && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_sim\") && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) && version=\"" . $_GET["sim_ver"] . "\")";
+    $sqlsub="SELECT DISTINCT versionSetID from version where versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_recon\") && version=?)" . " && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId in (SELECT id from package where name=\"halld_sim\") && versionSetID in (SELECT id from versionSet where onOasis=1 && filename NOT LIKE \"analysis-%\" ) && version=?)";
     $sql="SELECT filename as version,id as SetNum from versionSet where id in (" . $sqlsub . ") ORDER BY filename desc;";
+    $params = array($_GET["recon_ver"], $_GET["sim_ver"]);
     //$sql="SELECT DISTINCT versionSetID from version where versionSetID IN (SELECT DISTINCT versionSetId from version where packageId=2 && version=\"" . $_GET["recon_ver"] . "\")" . " && versionSetID IN (SELECT DISTINCT versionSetId from version where packageId=3 && version=\"" . $_GET["sim_ver"] . "\");";
     //echo $sql;
     }
@@ -48,12 +52,18 @@ else if( !isset($_GET["verSet"]) )
 }
 else
 {
-    $sql="SELECT DISTINCT filename as version from versionSet where id in (SELECT DISTINCT analysisSetId from version_set_correlations where reconSetId in (SELECT id from versionSet where filename=\"" . $_GET["verSet"] . "\" )) ORDER BY filename;";
+    $sql="SELECT DISTINCT filename as version from versionSet where id in (SELECT DISTINCT analysisSetId from version_set_correlations where reconSetId in (SELECT id from versionSet where filename=? )) ORDER BY filename;";
+    $params = array($_GET["verSet"]);
     #echo $sql;
 }
 
 // echo $sql;
-$result = $conn_vs->query($sql);
+$stmt = $conn_vs->prepare($sql);
+if (count($params) > 0) {
+    $stmt->bind_param(str_repeat("s", count($params)), ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
 
 $data = array();
 

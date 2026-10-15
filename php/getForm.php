@@ -6,7 +6,7 @@ if (!$conn) {
 }
 
 
-$sql = "SELECT * FROM Project where ID=" . $_GET["id"];
+$sql = "SELECT * FROM Project where ID=" . intval($_GET["id"]);
 
 $result = $conn->query($sql);
 $data = array();
@@ -24,19 +24,24 @@ if (!$conn_vs) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-$vsreconq="select version from version where packageId in (SELECT id from package where name=\"halld_recon\") && versionSetId in (SELECT id from versionSet where filename=\"" . $data[0]['VersionSet'] . "\");";
-//echo $vsreconq;
-//echo $conn_vs;
-$reconresult = $conn_vs->query($vsreconq);
-$recon = $reconresult->fetch_assoc();
+$vsq="select version from version where packageId in (SELECT id from package where name=?) && versionSetId in (SELECT id from versionSet where filename=?);";
+
+$vsstmt = $conn_vs->prepare($vsq);
+$pkg = "halld_recon";
+$vsfile = $data[0]['VersionSet'];
+$vsstmt->bind_param("ss", $pkg, $vsfile);
+$vsstmt->execute();
+$recon = $vsstmt->get_result()->fetch_assoc();
 //print_r($recon);
 $data[0]["recon_ver"]=$recon["version"];
 
-$vssimq="select version from version where packageId in (SELECT id from package where name=\"halld_sim\") && versionSetId in (SELECT id from versionSet where filename=\"" . $data[0]['SimVersionSet'] . "\");";
-$simresult = $conn_vs->query($vssimq);
-$sim = $simresult->fetch_assoc();
+$pkg = "halld_sim";
+$vsfile = $data[0]['SimVersionSet'];
+$vsstmt->execute();
+$sim = $vsstmt->get_result()->fetch_assoc();
 //print_r($recon);
 $data[0]["sim_ver"]=$sim["version"];
+$vsstmt->close();
 
 $conn->close();
 $conn_vs->close();

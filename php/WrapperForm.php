@@ -1,5 +1,20 @@
 <?php
 
+// Proxy prepends the real client IP to X-Forwarded-For; fall back to REMOTE_ADDR if missing/invalid.
+function GetClientIP()
+{
+    if ( isset($_SERVER['HTTP_X_FORWARDED_FOR']) )
+    {
+        $forwarded = explode(",", $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $candidate = trim($forwarded[0]);
+        if ( filter_var($candidate, FILTER_VALIDATE_IP) )
+        {
+            return $candidate;
+        }
+    }
+    return $_SERVER['REMOTE_ADDR'];
+}
+
 function UpdateProject($conn)
 {
     $dateNOW = date("m-d-Y");
@@ -204,11 +219,13 @@ function UpdateProject($conn)
  
     #$msg = $msg . $configstub;
     #echo "CONNECTING";
-    $userquery = "SELECT * FROM Users where name=\"" .  $_SERVER['PHP_AUTH_USER'] . "\"";
-    $userres = $conn->query($userquery);
+    $userstmt = $conn->prepare("SELECT * FROM Users where name=?");
+    $userstmt->bind_param("s", $_SERVER['PHP_AUTH_USER']);
+    $userstmt->execute();
+    $userres = $userstmt->get_result();
     $urow = $userres->fetch_assoc();
 
-    if (sizeof($urow) == 0)
+    if (empty($urow))
     {
         //echo "ADD USER";
         $newuser="INSERT INTO Users (name) VALUES (?)";
@@ -244,14 +261,14 @@ function UpdateProject($conn)
         echo "Execute failed: (" . $stmt->errno . ") " . $stmt->error;
     }
 
-    $spendq="Update Users SET wc=wc-?" . " where name=\"" .  $_SERVER['PHP_AUTH_USER'] . "\"";
+    $spendq="Update Users SET wc=wc-? where name=?";
     //echo $spendq;
     $spendstmt = $conn->prepare($spendq);
-    $spendstmt->bind_param("d", $_GET["spend"] );
+    $spendstmt->bind_param("ds", $_GET["spend"], $_SERVER['PHP_AUTH_USER'] );
     $spendstmt->execute();
 
 
-    $cmdstr='python /group/halld/www/halldweb/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . $_GET["prefill"];
+    $cmdstr='python /group/halld/www/halldweb-rh9/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . intval($_GET["prefill"]);
     $command = escapeshellcmd($cmdstr);
     #echo $command;
     #echo "<br>";
@@ -267,7 +284,7 @@ function UpdateProject($conn)
     $msg = $msg . "The configuration, will be checked by our team of skilled technicians to ensure you will receive only the finest artisanal Monte Carlo samples.\n";
     $msg = $msg . "You will be contacted at " . $_GET["useremail"] . " in the event issues are encountered.\n";
     $msg = $msg . "===============================================================================\n";
-    $msg = $msg . "You may view your request here: https://halldweb.jlab.org/gluex_sim/SubmitSim.html?prefill=" . $_GET["prefill"];
+    $msg = $msg . "You may view your request here: https://halldweb-rh9.jlab.org/gluex_sim/SubmitSim.html?prefill=" . $_GET["prefill"];
     $msg = $msg . " \nWhen completed your output will be found at: " . $fullOutput . "\n";
     $msg = $msg . "===============================================================================\n";
     $msg = $msg . "Some software version information is reproduced below, complete information can be found by following the link above\n";
@@ -296,7 +313,7 @@ function UpdateProject($conn)
     #echo "<br>";
     #echo "Thanks for your submission, your request should have been received.  A copy of your request has been emailed to the given address for your records.";
     #echo "<br>";
-    #echo "Jobs may be monitored via the " . "<a href='https://halldweb.jlab.org/gluex_sim/Dashboard.html'> MCwrapper Dashboard </a>";
+    #echo "Jobs may be monitored via the " . "<a href='https://halldweb-rh9.jlab.org/gluex_sim/Dashboard.html'> MCwrapper Dashboard </a>";
 
     $conn->close();
 }
@@ -526,11 +543,13 @@ function InsertProject($conn)
 
         #$msg = $msg . $configstub;
         #echo "CONNECTING";
-        $userquery = "SELECT * FROM Users where name=\"" .  $_SERVER['PHP_AUTH_USER'] . "\"";
-        $userres = $conn->query($userquery);
+        $userstmt = $conn->prepare("SELECT * FROM Users where name=?");
+        $userstmt->bind_param("s", $_SERVER['PHP_AUTH_USER']);
+        $userstmt->execute();
+        $userres = $userstmt->get_result();
         $urow = $userres->fetch_assoc();
 
-        if (sizeof($urow) == 0)
+        if (empty($urow))
         {
             //echo "ADD USER";
             $newuser="INSERT INTO Users (name) VALUES (?)";
@@ -539,8 +558,8 @@ function InsertProject($conn)
             $newuserstmt->execute();
         }
 
-        $user_id_q="SELECT * FROM Users where name=\"" . $_SERVER['PHP_AUTH_USER'] . "\"";
-        $user_id_res = $conn->query($user_id_q);
+        $userstmt->execute();
+        $user_id_res = $userstmt->get_result();
         $user_id_row = $user_id_res->fetch_assoc();
         $user_id=$user_id_row["ID"];
 
@@ -568,7 +587,7 @@ function InsertProject($conn)
                     $savegen, $rungeant, $savegeant, $runsmear, $savesmear, 
                     $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"], $configstub, 
                     $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"], $geant_secondaries, 
-                    $VerSet, $_SERVER['PHP_AUTH_USER'], $_SERVER['REMOTE_ADDR'], $RL, $rcdb_query, 
+                    $VerSet, $_SERVER['PHP_AUTH_USER'], GetClientIP(), $RL, $rcdb_query, 
                     $coherent, $_GET["spend"], $_GET["Genflux"], $eBeamE, $eBeamI, 
                     $anaVerSet, $genpost_str, $simVerSet, $user_id);
 
@@ -589,10 +608,10 @@ function InsertProject($conn)
 
         }
 
-        $spendq="Update Users SET wc=wc-?" . " where name=\"" .  $_SERVER['PHP_AUTH_USER'] . "\"";
+        $spendq="Update Users SET wc=wc-? where name=?";
 //echo $spendq;
         $spendstmt = $conn->prepare($spendq);
-        $spendstmt->bind_param("d", $_GET["spend"] );
+        $spendstmt->bind_param("ds", $_GET["spend"], $_SERVER['PHP_AUTH_USER'] );
         $spendstmt->execute();
 
         $IDquery = "SELECT MAX(ID) FROM Project";
@@ -601,7 +620,7 @@ function InsertProject($conn)
         //echo $row["MAX(ID)"];
 
 
-        $cmdstr='python /group/halld/www/halldweb/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . $row["MAX(ID)"];
+        $cmdstr='python /group/halld/www/halldweb-rh9/html/gluex_sim/MCDispatcher.py writeconfig -rlim ' . $row["MAX(ID)"];
         $command = escapeshellcmd($cmdstr);
         #echo $command;
         #echo "<br>";
@@ -617,7 +636,7 @@ function InsertProject($conn)
         $msg = $msg . "The configuration, will be checked by our team of skilled technicians to ensure you will receive only the finest artisanal Monte Carlo samples.\n";
         $msg = $msg . "You will be contacted at " . $_GET["useremail"] . " in the event issues are encountered.\n";
         $msg = $msg . "===============================================================================\n";
-        $msg = $msg . "You may view your request here: https://halldweb.jlab.org/gluex_sim/SubmitSim.html?prefill=" . $row["MAX(ID)"];
+        $msg = $msg . "You may view your request here: https://halldweb-rh9.jlab.org/gluex_sim/SubmitSim.html?prefill=" . $row["MAX(ID)"];
         $msg = $msg . " \nWhen completed your output will be found at: " . $fullOutput . "\n";
         $msg = $msg . "===============================================================================\n";
         $msg = $msg . "Some software version information is reproduced below, complete information can be found by following the link above\n";
@@ -646,7 +665,7 @@ function InsertProject($conn)
 #echo "<br>";
 #echo "Thanks for your submission, your request should have been received.  A copy of your request has been emailed to the given address for your records.";
 #echo "<br>";
-#echo "Jobs may be monitored via the " . "<a href='https://halldweb.jlab.org/gluex_sim/Dashboard.html'> MCwrapper Dashboard </a>";
+#echo "Jobs may be monitored via the " . "<a href='https://halldweb-rh9.jlab.org/gluex_sim/Dashboard.html'> MCwrapper Dashboard </a>";
 
         $conn->close();
         }
@@ -676,7 +695,7 @@ if( $_GET["mod"] == 0 || $_GET["prefill"] == -1 || $_GET["mod"] == 2)
 }
 else
 {
-    $ownerq="SELECT UName,Dispatched_Time FROM Project where ID=" . $_GET["prefill"];
+    $ownerq="SELECT UName,Dispatched_Time FROM Project where ID=" . intval($_GET["prefill"]);
     $ownerres = $conn->query($ownerq);
     $owner = $ownerres->fetch_assoc();
     //echo $owner["UName"] . $owner["Dispatched_Time"];
