@@ -1,5 +1,20 @@
 <?php
 
+// Proxy prepends the real client IP to X-Forwarded-For; fall back to REMOTE_ADDR if missing/invalid.
+function GetClientIP()
+{
+    if ( isset($_SERVER['HTTP_X_FORWARDED_FOR']) )
+    {
+        $forwarded = explode(",", $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $candidate = trim($forwarded[0]);
+        if ( filter_var($candidate, FILTER_VALIDATE_IP) )
+        {
+            return $candidate;
+        }
+    }
+    return $_SERVER['REMOTE_ADDR'];
+}
+
 function UpdateProject($conn)
 {
     $dateNOW = date("m-d-Y");
@@ -568,7 +583,7 @@ function InsertProject($conn)
                     $savegen, $rungeant, $savegeant, $runsmear, $savesmear, 
                     $runrecon, $saverecon, $_GET["generator"], $_GET["generator_config"], $configstub, 
                     $bkg, $_GET["addreq"], $_GET["GenMinE"], $_GET["GenMaxE"], $geant_secondaries, 
-                    $VerSet, $_SERVER['PHP_AUTH_USER'], $_SERVER['REMOTE_ADDR'], $RL, $rcdb_query, 
+                    $VerSet, $_SERVER['PHP_AUTH_USER'], GetClientIP(), $RL, $rcdb_query, 
                     $coherent, $_GET["spend"], $_GET["Genflux"], $eBeamE, $eBeamI, 
                     $anaVerSet, $genpost_str, $simVerSet, $user_id);
 

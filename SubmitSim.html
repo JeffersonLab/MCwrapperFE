@@ -101,7 +101,7 @@
         </form>
 
 </div>
-<div id="Info-pane">
+<div id="Info-pane" style="display:none">
         <object type="text/html" id="setpreview" data="https://halldweb.jlab.org/halld_versions/recon-2017_01-ver03_16.xml"
         style="width:100%; height:100%; margin:1%; align:center; position:relative; display:block">
 </object>
@@ -745,7 +745,7 @@ function MakeGlueXBeamTimeSelector()
         { id: "in201808lowE", label: "2018-08 lowE",     value: "2018_08",        fill: "lowE" },
         { id: "in201911",     label: "2019-11",          value: "2019_11",        fill: "2019_11-ver01" },
         { id: "in202301",     label: "2023-01",          value: "2023_01",        fill: "2023_01-ver04" },
-        { id: "in202501",     label: "2025-01",          value: "2025_01",        fill: "2025_01-ver03" },
+        <!-- { id: "in202501",     label: "2025-01",          value: "2025_01",        fill: "2025_01-ver03" }, -->
         { id: "inCustom",     label: "custom",           value: "custom",         fill: "custom", checked: true }
     ];
 
@@ -878,17 +878,17 @@ function MakeGlueXBeamTimeSelector()
     label202301.appendChild(document.createTextNode("2023-01"))
     form.appendChild(label202301)
 
-    var in202501 = document.createElement("input")
-    in202501.setAttribute("type","radio")
-    in202501.setAttribute("id","in202501")
-    in202501.setAttribute("name","btsel")
-    in202501.setAttribute("value","2025_01")
-    in202501.setAttribute("onclick","FillDefaults('2025_01-ver03');")
-    form.appendChild(in202501)
-    var label202501=document.createElement("LABEL");
-    label202501.setAttribute("for", "in202501");
-    label202501.appendChild(document.createTextNode("2025-01"))
-    form.appendChild(label202501)
+    <!-- var in202501 = document.createElement("input") -->
+    <!-- in202501.setAttribute("type","radio") -->
+    <!-- in202501.setAttribute("id","in202501") -->
+    <!-- in202501.setAttribute("name","btsel") -->
+    <!-- in202501.setAttribute("value","2025_01") -->
+    <!-- in202501.setAttribute("onclick","FillDefaults('2025_01-ver03');") -->
+    <!-- form.appendChild(in202501) -->
+    <!-- var label202501=document.createElement("LABEL"); -->
+    <!-- label202501.setAttribute("for", "in202501"); -->
+    <!-- label202501.appendChild(document.createTextNode("2025-01")) -->
+    <!-- form.appendChild(label202501) -->
 
     var inCustom = document.createElement("input")
     inCustom.setAttribute("type","radio")
@@ -1287,7 +1287,7 @@ function FillDefaults(beamtime){
         var rndtag = document.getElementById("randomtag")
         beamtime == "2017_01-ver03" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
         : beamtime == "2017_01-ver04" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
-        : beamtime == "2017_01-ver05" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver03.2")
+        : beamtime == "2017_01-ver05" ? MakeSelectedByValue(rndtag,"recon-2017_01-ver05")
         : beamtime == "2018_01-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_01-ver02.2")
         : beamtime == "2018_08-ver02" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
         : beamtime == "lowE" ? MakeSelectedByValue(rndtag,"recon-2018_08-ver02.2")
@@ -1442,12 +1442,12 @@ function MakeGluexForm()
     var numevts=document.createElement("INPUT")
     numevts.type="number"
     numevts.min=1
-    numevts.max=500000000
+    numevts.max=1000000000
     numevts.id="numevt"
     numevts.name="numevents"
     numevts.placeholder="1000000"
     numevts.required=true;
-    numevts.title="Integer number representing the total desired events to produce. Must be between 1 and 250 million"
+    numevts.title="Integer number representing the total desired events to produce. Must be between 1 and 1 billion"
     numevts.style.width="20%";
     form.appendChild(numevts);
 
@@ -3260,7 +3260,7 @@ function updateBKGoptions()
             document.getElementById("randomtag").replaceWith(randomtag)
 
             document.getElementById("randomtag").style.width="38%"
-            randtags=["recon-2017_01-ver05","recon-2017_01-ver03.2","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01.2","recon-2019_11-ver01","recon-2019_11-ver01.2","recon-2021_08-ver01","recon-2021_11-ver01", "recon-2022_08-ver01", "recon-2023-01-ver04", "recon-2025_01-ver03", "workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
+            randtags=["recon-2017_01-ver03.2","recon-2017_01-ver05","recon-2018_01-ver02.2","recon-2018_08-ver02.2","recon-2019_01-ver01.2","recon-2019_11-ver01","recon-2019_11-ver01.2","recon-2021_08-ver01","recon-2021_11-ver01", "recon-2022_08-ver01", "recon-2023-01-ver04", "recon-2025_01-ver03", "workfest2018_baseline","offmon-2018_01-ver11","offmon-2018_08-ver07"]
 
             randtags.forEach(function(element) {
                 halld_reconVer=document.getElementById("recon_stack")

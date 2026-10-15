@@ -4,7 +4,7 @@
 </head>
 
 <link rel="stylesheet" type="text/css" href="./css/animations.css"/>
-<link rel="stylesheet" type="text/css" href="./css/Dashboard.css"/>
+<link rel="stylesheet" type="text/css" href="./css/Dashboard.css?v=2"/>
 <link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">
 <script src="./js/jquery-3.3.1.min.js" type="text/javascript"></script>
 <script src="./js/jquery-ui.js"></script>
@@ -16,17 +16,17 @@
 <script type="text/javascript" src="./js/fnFindCellRowIndexes.js"></script>
 <script src="./js/dataTables.fixedHeader.min.js"></script>
 <script src="./js/three.min.js"></script>
-<script src="./js/globe/globe.js"></script>
+<script src="./js/globe/globe.js?v=4"></script>
 
 
 <script>
     var ProjInterval;
     var JobsInterval;
     var AttemptsInterval;
+    var ATTEMPTS_SERVER_SIDE_THRESHOLD = 20000; // jobs; above this the attempts table pages on the server
     var result=[];
         var ipTable= [];
         var subIPs=[];
-        var runIPs=[];
         var mouseOverObject;
         var ProjTable;
         var ProjDataSet=[];
@@ -36,6 +36,7 @@
         var JobsDataSet=[];
         var JobsColumnDefs=[];
         var globe;
+        var globeUnavailable=false;
         var selected_Project=-1;
 
         var Attemptsresult= [];
@@ -121,7 +122,7 @@
             GetHeartbeats();
         },30000)
         
-        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php();InitGlobe()}); 
+        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php();ShowAllGeo()}); 
 
     document.addEventListener("mousemove",function (e){locX=e.clientX;locY=e.clientY;})
 
@@ -198,29 +199,64 @@
         }
 });
 
+// narrow windows show the globe and the graphs as two tabs (see Dashboard.css); wide windows show both
+function ShowHeaderTab(which)
+{
+    var info = document.getElementById("headerInfo");
+    info.className = info.className.replace(/\btab-(globe|graphs)\b/g, "").trim() + " tab-" + which;
+    document.getElementById("tabGlobeBtn").className = which === "globe" ? "active" : "";
+    document.getElementById("tabGraphsBtn").className = which === "graphs" ? "active" : "";
+    // the globe canvas cannot size itself while hidden: let it re-measure now that it is visible
+    window.dispatchEvent(new Event("resize"));
+}
+
    function InitGlobe()
   {
     var globe3d = document.getElementById("globe");
-    if(!globe && globe3d)
+    if(!globe && globe3d && !globeUnavailable)
     {
-        globe = new DAT.Globe( globe3d );
+        try
+        {
+            globe = new DAT.Globe( globe3d );
+            var btnCss = "padding:4px 10px;margin-left:6px;cursor:pointer;" +
+                "background:rgba(0,0,0,0.65);border:1px solid #666;border-radius:4px;color:#66ccff;font:12px Arial,sans-serif;";
+            var btnBox = document.createElement("div");
+            btnBox.style.cssText = "position:absolute;top:8px;right:8px;z-index:2;";
+            var activeBtn = document.createElement("button");
+            activeBtn.id = "globeAllBtn";
+            activeBtn.textContent = "Total active";
+            activeBtn.title = "Show job locations for all active projects (may be slow)";
+            activeBtn.style.cssText = btnCss;
+            activeBtn.onclick = function(){ ShowAllGeo(); };
+            var everythingBtn = document.createElement("button");
+            everythingBtn.id = "globeEverythingBtn";
+            everythingBtn.textContent = "All projects";
+            everythingBtn.title = "Show every project's job locations (daily snapshot)";
+            everythingBtn.style.cssText = btnCss;
+            everythingBtn.onclick = function(){ ShowEverythingGeo(); };
+            btnBox.appendChild(activeBtn);
+            btnBox.appendChild(everythingBtn);
+            globe3d.style.position = "relative";
+            globe3d.appendChild(btnBox);
+        }
+        catch(err)
+        {
+            // e.g. WebGL disabled / hardware acceleration off / no GPU over remote desktop
+            globeUnavailable = true;
+            globe = undefined;
+            console.warn("Globe disabled: WebGL unavailable.", err);
+            $(globe3d).empty().append($("<div>").text("3D globe unavailable: WebGL is not supported or is disabled in this browser.")
+                .css({color: "#aaa", font: "14px Arial,sans-serif", padding: "20px"}));
+        }
     }
   }
 
   function SetSceneGlobe()
    { 
-    var globe3d = document.getElementById("globe");
-    if(globe)
-    {
-        if(globe.renderer) globe.renderer.dispose();
-    disposeHierarchy (globe.points, disposeNode);
-    disposeHierarchy (globe.scene, disposeNode);
-    
-    globe3d.innerHTML="";
-    globe=null;
-    }
-
-    globe = new DAT.Globe( globe3d );
+    InitGlobe();
+    if(!globe)
+        return;
+    globe.clearPoints();
     var xhr = new XMLHttpRequest();
     //console.log("sub: ")
     //console.log(subIPs)
@@ -281,85 +317,470 @@
     {
         globe.addData( toRet, {format: 'magnitude', name: "subDATA"} );
         globe.createPoints();
+        globe.setPointsVisible(projGeo.projID < 0);
     }
 
 }
-function SetRunGlobe()
-   { 
-    
-    var rglobe3d = document.getElementById("globe");
+
+// ---- per-project "where did my jobs run" globe view ----
+var GEO_POLL_MS = 5000; // same cadence as the Attempts table reload
+var GEO_ALL_POLL_MS = 15000; // ~one FastOverlord pass; faster only re-reads unchanged data
+var GEO_EVERYTHING_POLL_MS = 24 * 3600 * 1000; // snapshot is rebuilt daily
+var GEO_ALL_MAX_STREAMERS = 400; // beyond this, smaller routes only get bars
+var GEO_COLORS = { running: 0x3399ff, succeeded: 0x33dd55, failed: 0xff3333, mixed: 0xff9900, other: 0x999999 };
+var GEO_SUBMIT_COLOR = 0xffffff, GEO_DEFAULT_ORIGIN_COLOR = 0xffee55;
+// projID is a project number, -1 (none), "all" (active projects) or "everything" (daily whole-DB snapshot)
+var projGeo = { projID: -1, req: 0, timer: null, inflight: false, origin: null, originKey: null, sites: {}, routes: {}, lastData: null };
+var geoLegendCollapsed = false;
+
+function GeoSiteState(s)
+{
+    if(s.running > 0) return "running";
+    if(s.succeeded > 0 && s.failed > 0) return "mixed";
+    if(s.failed > 0) return "failed";
+    if(s.succeeded > 0) return "succeeded";
+    return "other";
+}
+
+function GeoHex(c)
+{
+    return "#" + ("000000" + c.toString(16)).slice(-6);
+}
+
+// packet rate scales linearly with running jobs, from 0.2/s up to 2.5/s at the busiest route
+function GeoPacketInterval(running, maxRunning)
+{
+    var rate = 0.2 + 2.3 * (running > 0 ? running : 0) / Math.max(1, maxRunning);
+    return 1000 / rate;
+}
+
+// tolerate a cached globe.js without setRate
+function GeoSetRate(arc, ms)
+{
+    if(arc && arc.setRate)
+        arc.setRate(ms);
+}
+
+function ShowProjectGeo(projID)
+{
+    InitGlobe();
+    if(!globe)
+        return;
+    projID = parseInt(projID);
+    if(projGeo.projID !== projID)
+        StartGeo(projID, GEO_POLL_MS, "Locating jobs for project " + projID + "...");
+    PollProjectGeo();
+}
+
+function ShowAllGeo()
+{
+    InitGlobe();
+    if(!globe)
+        return;
+    if(projGeo.projID !== "all")
+    {
+        StartGeo("all", GEO_ALL_POLL_MS, "Gathering job locations for all active projects (this may take a while)...");
+        globe.setAutoRotate(true);
+    }
+    PollProjectGeo();
+}
+
+function ShowEverythingGeo()
+{
+    InitGlobe();
+    if(!globe)
+        return;
+    if(projGeo.projID !== "everything")
+    {
+        StartGeo("everything", GEO_EVERYTHING_POLL_MS, "Loading the all-projects snapshot...");
+        globe.setAutoRotate(true);
+    }
+    PollProjectGeo();
+}
+
+function StartGeo(projID, pollMs, message)
+{
+    projGeo.projID = projID;
+    projGeo.req++;
+    projGeo.inflight = false;
+    projGeo.origin = null;
+    projGeo.originKey = null;
+    projGeo.sites = {};
+    projGeo.routes = {};
+    globe.clearOverlay();
+    globe.setPointsVisible(false);
+    SetGeoLegend(null, message);
+    if(projGeo.timer)
+        clearInterval(projGeo.timer);
+    projGeo.timer = setInterval(PollProjectGeo, pollMs);
+}
+
+function PollProjectGeo()
+{
+    if(projGeo.projID === -1 || projGeo.inflight)
+        return;
+    var projID = projGeo.projID;
+    var isAll = projID === "all" || projID === "everything";
+    var name = projID === "everything" ? "all projects" : isAll ? "all active projects" : "project " + projID;
+    var reqID = ++projGeo.req;
+    projGeo.inflight = true;
+    var repollMs = null; // set when the server still has IPs to locate
+    $.ajax({ url: "./php/projectGeo.php", data: {projID: projID}, dataType: "json", timeout: isAll ? 180000 : 30000 })
+        .done(function(data){
+            if(reqID !== projGeo.req)
+                return;
+            if(data && data.lookup && data.unlocated && data.unlocated.pending > 0)
+            {
+                // one ip-api batch per request: come straight back for the next one, or wait out a rate-limit window
+                repollMs = Math.min(65000, Math.max(300, (data.lookup.retry_after || 0) * 1000));
+                if(data.lookup.error)
+                    console.log("projectGeo lookup:", data.lookup);
+            }
+            if(data && !data.error && isAll && data.mode === "all")
+                RenderAllGeo(data);
+            else if(data && !data.error && !isAll && data.origin)
+                RenderProjectGeo(data);
+            else if(!projGeo.origin && projGeo.originKey === null)
+                SetGeoLegend(null, "Could not locate jobs for " + name + ".");
+        })
+        .fail(function(){
+            if(reqID === projGeo.req && !projGeo.origin && projGeo.originKey === null)
+                SetGeoLegend(null, "Could not load job locations for " + name + ".");
+        })
+        .always(function(){
+            if(reqID === projGeo.req)
+            {
+                projGeo.inflight = false;
+                if(repollMs !== null)
+                    setTimeout(function(){ if(projGeo.projID === projID) PollProjectGeo(); }, repollMs);
+            }
+        });
+}
+
+function ClearProjectGeo()
+{
+    projGeo.projID = -1;
+    projGeo.req++;
+    projGeo.inflight = false;
+    projGeo.origin = null;
+    projGeo.originKey = null;
+    projGeo.sites = {};
+    projGeo.routes = {};
+    if(projGeo.timer)
+    {
+        clearInterval(projGeo.timer);
+        projGeo.timer = null;
+    }
     if(globe)
     {
-        if(globe.renderer) globe.renderer.dispose();
-        disposeHierarchy (globe.points, disposeNode);
-        disposeHierarchy (globe.scene, disposeNode);
-        rglobe3d.innerHTML="";
-        globe=null;
+        globe.clearOverlay();
+        globe.setPointsVisible(true);
+        globe.setAutoRotate(true);
     }
-    globe = new DAT.Globe( rglobe3d );
-    console.log(globe.scene)
+    $("#globeLegend").remove();
+}
 
-    var xhr = new XMLHttpRequest();
-    //console.log("sub: ")
-    //console.log(subIPs)
-    var total=[]
-    var longlatarr=[]
-    var baseUrlip= "http://api.ipapi.com/"
-    
-    var countedrunIPs=[]
-
-    for(var i=0;i<runIPs.length;i++)
+// job-weighted midpoint of the submit location and the run sites, so the streamers are in view
+function GeoFocusPoint(origin, sites)
+{
+    var d2r = Math.PI / 180;
+    function vec(lat, lon, w) { return [w*Math.cos(lat*d2r)*Math.cos(lon*d2r), w*Math.cos(lat*d2r)*Math.sin(lon*d2r), w*Math.sin(lat*d2r)]; }
+    var total = 0;
+    for(var i=0;i<sites.length;i++) total += sites[i].jobs;
+    var v = vec(origin.lat, origin.lon, 1);
+    for(var i=0;i<sites.length;i++)
     {
-        long=null;
-        lat=null;
-        for(var q=0;q<ipTable.length;q++)
-        {
-            if(runIPs[i]==ipTable[q].IP)
-            {
-                long=ipTable[q].Longitude;
-                lat=ipTable[q].Latitude;
-                break;
-            }
-        }
-        var found=false;
-        for(var j=0;j<countedrunIPs.length;j++)
-        {
-            if(countedrunIPs[j].long==long && countedrunIPs[j].lat==lat)
-            {
-                countedrunIPs[j].count=countedrunIPs[j].count+1;
-                found=true;
-                break;
-            }
-
-            
-        }
-        if(!found && long && lat )
-        {
-            countedrunIPs.push({"long":long, "lat":lat, "count":1})
-        }
+        var s = vec(sites[i].lat, sites[i].lon, sites[i].jobs / total);
+        v[0] += s[0]; v[1] += s[1]; v[2] += s[2];
     }
+    if(Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]) < 0.2)
+        return origin;
+    return { lat: Math.atan2(v[2], Math.sqrt(v[0]*v[0] + v[1]*v[1])) / d2r, lon: Math.atan2(v[1], v[0]) / d2r };
+}
 
-    var denom=1.
-    for(var k=0;k<countedrunIPs.length;k++)
-    { 
-        denom+=countedrunIPs[k].count;
-    }
-    console.log("run: ")
-    console.log(countedrunIPs)
-    
-    var toRet=[]
-    for(var i=0;i<countedrunIPs.length;i++)
+function RenderProjectGeo(data)
+{
+    var o = data.origin;
+    var sites = data.sites || [];
+    var originChanged = !projGeo.origin || projGeo.origin.lat != o.lat || projGeo.origin.lon != o.lon;
+    if(originChanged)
     {
-        toRet.push(countedrunIPs[i].lat)
-        toRet.push(countedrunIPs[i].long)
-        toRet.push(2*countedrunIPs[i].count/denom)
-    }
-    if(toRet.length > 0)
-    {
-        globe.addData( toRet, {format: 'magnitude', name: "runDATA"} );
-        globe.createPoints();
+        // e.g. submit IP lookup finished after a default origin was shown: replay from the real origin
+        globe.clearOverlay();
+        projGeo.sites = {};
+        projGeo.origin = { lat: o.lat, lon: o.lon };
+        globe.pulseAt(o.lat, o.lon, o["default"] ? GEO_DEFAULT_ORIGIN_COLOR : GEO_SUBMIT_COLOR);
+        var f = GeoFocusPoint(projGeo.origin, sites);
+        globe.focusOn(f.lat, f.lon);
     }
 
+    var maxJobs = 1, maxRunning = 0;
+    for(var i=0;i<sites.length;i++)
+    {
+        maxJobs = Math.max(maxJobs, sites[i].jobs);
+        maxRunning = Math.max(maxRunning, sites[i].running);
+    }
+
+    var step = sites.length ? Math.min(150, 3000 / sites.length) : 0;
+    var launched = 0;
+    var seen = {};
+    for(var i=0;i<sites.length;i++)
+    {
+        var s = sites[i];
+        var id = s.lat.toFixed(1) + "," + s.lon.toFixed(1);
+        if(seen[id])
+            continue;
+        seen[id] = true;
+        var state = { lat: s.lat, lon: s.lon, h: 8 + 100 * Math.sqrt(s.jobs / maxJobs), hex: GEO_COLORS[GeoSiteState(s)] };
+        state.color = new THREE.Color(state.hex);
+
+        var prev = projGeo.sites[id];
+        if(prev)
+        {
+            state.arc = prev.arc;
+            projGeo.sites[id] = state;
+            if(state.arc && prev.hex !== state.hex)
+                state.arc.setColor(state.hex);
+            GeoSetRate(state.arc, GeoPacketInterval(s.running, maxRunning));
+            if(globe.hasBar(id))
+                globe.setBar(id, s.lat, s.lon, state.h, state.color);
+            continue;
+        }
+        projGeo.sites[id] = state;
+        (function(id){
+            state.arc = globe.launch(projGeo.origin, s, 600 + step * launched++, state.hex, function(){
+                var cur = projGeo.sites[id];
+                if(cur)
+                    globe.setBar(id, cur.lat, cur.lon, cur.h, cur.color);
+            });
+            GeoSetRate(state.arc, GeoPacketInterval(s.running, maxRunning));
+        })(id);
+    }
+    for(var id in projGeo.sites)
+    {
+        if(!seen[id])
+        {
+            if(projGeo.sites[id].arc)
+                projGeo.sites[id].arc.stop();
+            delete projGeo.sites[id];
+            globe.removeBar(id);
+        }
+    }
+    SetGeoLegend(data, null);
+}
+
+function GeoLandBar(id)
+{
+    var s = projGeo.sites[id];
+    if(s)
+        globe.setBar(id, s.lat, s.lon, s.h, s.color);
+}
+
+function RenderAllGeo(data)
+{
+    var origins = data.origins || [], sites = data.sites || [], routes = data.routes || [];
+    var originKey = origins.map(function(o){ return o.cell + (o["default"] ? "d" : ""); }).sort().join(";");
+    if(projGeo.originKey !== originKey)
+    {
+        // new project or newly resolved submit IP: replay everything
+        globe.clearOverlay();
+        projGeo.sites = {};
+        projGeo.routes = {};
+        projGeo.originKey = originKey;
+        for(var i=0;i<origins.length;i++)
+            globe.pulseAt(origins[i].lat, origins[i].lon, origins[i]["default"] ? GEO_DEFAULT_ORIGIN_COLOR : GEO_SUBMIT_COLOR);
+    }
+
+    var maxJobs = 1;
+    for(var i=0;i<sites.length;i++)
+        maxJobs = Math.max(maxJobs, sites[i].jobs);
+    var newSites = {};
+    for(var i=0;i<sites.length;i++)
+    {
+        var s = sites[i];
+        var hex = GEO_COLORS[GeoSiteState(s)];
+        newSites[s.cell] = { lat: s.lat, lon: s.lon, h: 8 + 100 * Math.sqrt(s.jobs / maxJobs), hex: hex, color: new THREE.Color(hex) };
+    }
+    for(var id in projGeo.sites)
+        if(!newSites[id])
+            globe.removeBar(id);
+    projGeo.sites = newSites;
+    for(var id in newSites)
+        if(globe.hasBar(id))
+            GeoLandBar(id);
+
+    var seen = {};
+    for(var i=0;i<routes.length;i++)
+        seen[routes[i].origin + ">" + routes[i].site] = true;
+    var arcs = 0;
+    for(var id in projGeo.routes)
+    {
+        if(!seen[id])
+        {
+            if(projGeo.routes[id].arc)
+                projGeo.routes[id].arc.stop();
+            delete projGeo.routes[id];
+        }
+        else if(projGeo.routes[id].arc)
+            arcs++;
+    }
+
+    var step = routes.length ? Math.min(150, 4000 / Math.min(routes.length, GEO_ALL_MAX_STREAMERS)) : 0;
+    var launched = 0, maxRunning = 0;
+    for(var i=0;i<routes.length;i++)
+        maxRunning = Math.max(maxRunning, routes[i].running);
+    for(var i=0;i<routes.length;i++)
+    {
+        var r = routes[i];
+        var id = r.origin + ">" + r.site;
+        var hex = GEO_COLORS[GeoSiteState(r)];
+        var rate = GeoPacketInterval(r.running, maxRunning);
+        var prev = projGeo.routes[id];
+        if(prev)
+        {
+            if(prev.arc && prev.hex !== hex)
+                prev.arc.setColor(hex);
+            GeoSetRate(prev.arc, rate);
+            prev.hex = hex;
+            continue;
+        }
+        if(arcs >= GEO_ALL_MAX_STREAMERS)
+        {
+            projGeo.routes[id] = { arc: null, hex: hex };
+            if(!globe.hasBar(r.site))
+                GeoLandBar(r.site);
+            continue;
+        }
+        arcs++;
+        (function(site){
+            projGeo.routes[id] = { hex: hex, arc: globe.launch(r.from, r.to, 600 + step * launched++, hex, function(){
+                if(!globe.hasBar(site))
+                    GeoLandBar(site);
+            }) };
+            GeoSetRate(projGeo.routes[id].arc, rate);
+        })(r.site);
+    }
+    SetGeoLegend(data, null);
+}
+
+function SetGeoLegend(data, message)
+{
+    if(data)
+        projGeo.lastData = data;
+    var globe3d = document.getElementById("globe");
+    if(!globe3d)
+        return;
+    globe3d.style.position = "relative";
+    var legend = document.getElementById("globeLegend");
+    if(!legend)
+    {
+        legend = document.createElement("div");
+        legend.id = "globeLegend";
+        // the legend sits inside the globe container: keep its clicks from reaching the globe's drag handler,
+        // which would stop the auto-rotation
+        legend.addEventListener("mousedown", function(e){ e.stopPropagation(); }, false);
+        legend.style.cssText = "position:absolute;top:8px;left:8px;z-index:2;max-width:45%;padding:6px 10px;" +
+            "background:rgba(0,0,0,0.65);border:1px solid #444;border-radius:4px;color:#fff;font:12px/16px Arial,sans-serif;";
+        globe3d.appendChild(legend);
+    }
+    $(legend).empty();
+    function line(text, css)
+    {
+        var d = document.createElement("div");
+        d.textContent = text;
+        if(css) d.style.cssText = css;
+        legend.appendChild(d);
+    }
+
+    if(message)
+    {
+        line(message);
+    }
+    else
+    {
+        var sites = data.sites || [];
+        var located = 0, running = 0, succeeded = 0, failed = 0;
+        for(var i=0;i<sites.length;i++) { located += sites[i].jobs; running += sites[i].running; succeeded += sites[i].succeeded; failed += sites[i].failed; }
+
+        var toggle = document.createElement("span");
+        toggle.textContent = geoLegendCollapsed ? "[+]" : "[\u2212]";
+        toggle.title = geoLegendCollapsed ? "Expand" : "Minimize";
+        toggle.style.cssText = "float:right;margin-left:10px;cursor:pointer;color:#aaa";
+        toggle.onclick = function(){ geoLegendCollapsed = !geoLegendCollapsed; SetGeoLegend(projGeo.lastData, null); };
+        legend.appendChild(toggle);
+
+        var isAll = data.mode === "all";
+        var title = data.scope === "everything" ? "All projects (" + data.project_count + ")"
+            : isAll ? "All active projects (" + data.project_count + ")" : "Project " + data.projID;
+        line(title + ": " + located + " of " + data.total_jobs + " jobs located", "font-weight:bold");
+        if(geoLegendCollapsed)
+            return;
+        if(data.generated)
+            line("Snapshot from " + data.generated, "color:#aaa");
+        line(running + " running, " + succeeded + " succeeded, " + failed + " failed");
+
+        var key = document.createElement("div");
+        var keyItems = [["running", "running"], ["succeeded", "success"], ["failed", "failure"], ["mixed", "both"]];
+        for(var i=0;i<keyItems.length;i++)
+        {
+            var sw = document.createElement("span");
+            sw.textContent = "\u25A0 " + keyItems[i][1] + "  ";
+            sw.style.color = GeoHex(GEO_COLORS[keyItems[i][0]]);
+            key.appendChild(sw);
+        }
+        legend.appendChild(key);
+
+        if(isAll)
+        {
+            var origins = data.origins || [], defProj = 0;
+            for(var i=0;i<origins.length;i++) defProj += origins[i].default_projects;
+            line("Pulses: " + origins.length + " submit location" + (origins.length == 1 ? "" : "s"), "color:" + GeoHex(GEO_SUBMIT_COLOR));
+            if(defProj)
+                line(defProj + " project" + (defProj == 1 ? "" : "s") + " without a locatable submit IP shown at Jefferson Lab", "color:" + GeoHex(GEO_DEFAULT_ORIGIN_COLOR));
+        }
+        else
+        {
+            var o = data.origin;
+            var originText = {
+                "ok": "Pulse: submit location",
+                "null": "Submit IP not recorded; pulse at " + o.label,
+                "internal": "Submit IP is internal; pulse at " + o.label,
+                "unresolved": "Submit IP could not be geolocated; pulse at " + o.label,
+                "pending": "Submit location lookup pending; pulse at " + o.label
+            }[o.ip_status] || ("Pulse at " + o.label);
+            line(originText, "color:" + GeoHex(o["default"] ? GEO_DEFAULT_ORIGIN_COLOR : GEO_SUBMIT_COLOR));
+        }
+
+        if(sites.length == 0)
+            line("No job run locations available yet.", "color:#aaa");
+        for(var i=0;i<Math.min(6, sites.length);i++)
+        {
+            var s = sites[i], counts = [];
+            if(s.running) counts.push(s.running + " running");
+            if(s.succeeded) counts.push(s.succeeded + " ok");
+            if(s.failed) counts.push(s.failed + " failed");
+            line((s.label || (s.lat.toFixed(1) + ", " + s.lon.toFixed(1))) + ": " + s.jobs + " jobs" + (counts.length ? " (" + counts.join(", ") + ")" : ""),
+                "color:" + GeoHex(GEO_COLORS[GeoSiteState(s)]));
+        }
+        if(sites.length > 6)
+            line("+ " + (sites.length - 6) + " more sites", "color:#aaa");
+
+        var u = data.unlocated || {};
+        var names = { waiting: "not started", no_ip: "no IP recorded", internal: "internal IP", unresolved: "unresolvable", pending: "lookup pending" };
+        var parts = [];
+        for(var k in names)
+            if(u[k] > 0) parts.push(u[k] + " " + names[k]);
+        if(parts.length)
+            line("Not shown: " + parts.join(", "), "color:#aaa");
+    }
+
+    var back = document.createElement("a");
+    back.href = "#";
+    var fromProject = typeof projGeo.projID === "number" && projGeo.projID >= 0;
+    back.textContent = fromProject ? "Show all active projects" : "Show all submissions";
+    back.style.cssText = "color:#66ccff;display:inline-block;margin-top:4px";
+    back.onclick = function(e){ e.preventDefault(); if(fromProject) ShowAllGeo(); else ClearProjectGeo(); };
+    legend.appendChild(back);
 }
 
 function startFocusOut(){
@@ -612,57 +1033,6 @@ function QueryDatabase()
 
         console.log("./php/decodeGeo.php");
         xmlhttp.open("GET","./php/decodeGeo.php",true);
-        xmlhttp.send();
-  }
-  function QueryDatabaseRunIP(projID)
-  {
-
-      var qresult=[];
-        if (window.XMLHttpRequest) {
-            // code for IE7+, Firefox, Chrome, Opera, Safari
-            xmlhttp = new XMLHttpRequest();
-        } else {
-            // code for IE6, IE5
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-        }
-        xmlhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var result_to_use;
-                console.log("Query DatabaseRunIP")
-                console.log(this.responseText)
-                if(this.responseText != "")
-                {
-                result=JSON.parse(this.responseText);
-                console.log(result)
-                result_to_use=result;
-
-                runIPs=[]
-                for(var i=0;i<result.length;i++)
-                {
-                    if(result[i]["RunIP"])
-                    {
-			            runIPs.push(result[i]["RunIP"]);
-                        //IPMapper.addIPMarker(result[i]["UIp"]);
-                    }
-                }
-                //console.log("QUERY IPS")
-                //console.log(subIPs)
-                //IPMapper.addIPArray(iplist);
-                //console.log(result)
-                
-                //DecodeGeos();
-                SetRunGlobe();
-               
-
-                }
-                
-            }
-        };
-        
-         
-
-        //console.log("./php/MakeTables.php?Table=RunMap&projID="+projID);
-        xmlhttp.open("GET","./php/MakeTables.php?Table=RunMap&projID="+projID,true);
         xmlhttp.send();
   }
 
@@ -962,8 +1332,7 @@ function MakeAttemptsTable(projID,TotalActiveJobs)
         document.getElementById("Attempts_header").innerHTML="Project "+String(projID)+" Details ("+String(TotalActiveJobs)+" Jobs)";
       }
 
-  attemptsTable = $('#AttemptsTable').DataTable( {
-      ajax: "./php/MakeTables.php?Table=Attempts&projID=" + projID,
+  var attemptsOpts = {
       columns: [
         { title: "IsActive" , data: "IsActive" },
         { title: "RunNumber" , data: "RunNumber" },
@@ -978,16 +1347,36 @@ function MakeAttemptsTable(projID,TotalActiveJobs)
         { title: "DataVerified?", data: "DataVerified"}
         
       ]
-  } );
+  };
+  if(parseInt(TotalActiveJobs) > ATTEMPTS_SERVER_SIDE_THRESHOLD)
+  {
+      // only the visible page is fetched; paging, sorting and search query the server
+      attemptsOpts.serverSide = true;
+      attemptsOpts.processing = true;
+      attemptsOpts.searchDelay = 600;
+      attemptsOpts.ajax = { url: "./php/attemptsPage.php", type: "POST", data: function(d){ d.projID = projID; } };
+  }
+  else
+  {
+      attemptsOpts.ajax = "./php/MakeTables.php?Table=Attempts&view=dash&projID=" + projID;
+  }
+  var attemptsInflight = false;
+  attemptsTable = $('#AttemptsTable')
+      .off('preXhr.dt xhr.dt error.dt')
+      .on('preXhr.dt', function(){ attemptsInflight = true; })
+      .on('xhr.dt error.dt', function(){ attemptsInflight = false; })
+      .DataTable(attemptsOpts);
   //document.getElementById("Attempts_header").innerHTML="Project "+String(projID)+" Details ("+attemptsTable.data("COUNT(Jobs.ID")+" Jobs)"
   if(AttemptsInterval != null)
   {
       clearInterval(AttemptsInterval)
   }
   AttemptsInterval= setInterval( function () {
+    if(attemptsInflight)
+        return;
     attemptsTable.ajax.reload(null, false);  // The second param, false, ensures that if the user is on a page, it doesn't go back to page 1 upon reload
   }, 5000 );
-  QueryDatabaseRunIP(projID);
+  ShowProjectGeo(projID);
 }
 
 
@@ -1103,36 +1492,7 @@ function DisplayAttempts(e,obj)
     var currRow=obj.closest("tr")
     var currRowData= $('#ProjTable').DataTable().row(currRow).data();
     var TotalActiveJobs=currRowData['TotalActiveJobs'];
-   // var activeJobs=obj.parentNode.childNodes[12].innerHTML;
-    //console.log(activeJobs)
-    
-        if (window.XMLHttpRequest) {
-            // code for IE7+, Firefox, Chrome, Opera, Safari
-            xmlhttp = new XMLHttpRequest();
-        } else {
-            // code for IE6, IE5
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-        }
-        xmlhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var result_to_use;
-                console.log("Display attempts")
-                console.log(this.responseText)
-                if(this.responseText != "")
-                {
-                result=JSON.parse(this.responseText);
-                console.log(result);
-                result_to_use=result;
-                MakeAttemptsTable(projID,TotalActiveJobs)
-                //ColorCells();
-                }
-                
-            }
-        };
-        
-        //console.log("./php/MakeTables.php?Table=Attempts\&projID="+projID);
-        xmlhttp.open("GET","./php/MakeTables.php?Table=Attempts\&projID="+projID,true);
-        xmlhttp.send();
+    MakeAttemptsTable(projID,TotalActiveJobs)
 }
 function DoMenu(action)
 {
@@ -1451,7 +1811,11 @@ function GetNews()
                 </div>
               </nav>
 </div>
-<div class="header-info">
+<div class="header-info tab-globe" id="headerInfo">
+        <div id="headerTabs">
+            <button type="button" id="tabGlobeBtn" class="active" onclick="ShowHeaderTab('globe')">Globe</button>
+            <button type="button" id="tabGraphsBtn" onclick="ShowHeaderTab('graphs')">Graphs</button>
+        </div>
         <div id="globe" width="1250">
 
             </div>
