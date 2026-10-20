@@ -4,7 +4,7 @@ require_once "readerConnection.php";
 $defaultFont = '"Geist", sans-serif';
 $userFonts = array(
     
-    "test" => '"Comic Sans MS", cursive'
+    "test" => 'Creepster'
 );
 $username = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : "";
 $font = isset($userFonts[$username]) ? $userFonts[$username] : $defaultFont;
@@ -21,6 +21,16 @@ $sillyFonts = array(
     "Rubik Bubbles"
 );
 $webFont = null;
+$fontFamilies = explode(",", $font);
+$requestedFont = trim($fontFamilies[0], " \t\n\r\0\x0B\"'");
+foreach ($sillyFonts as $candidate)
+{
+    if (strcasecmp($requestedFont, $candidate) === 0)
+    {
+        $webFont = $candidate;
+        break;
+    }
+}
 $today = new DateTime("now", new DateTimeZone("America/New_York"));
 if ($today->format("m-d") === "04-01")
 {
