@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <head>
     <title>Active MC Dashboard by Thomas Britton</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <link rel="stylesheet" type="text/css" href="./css/animations.css"/>
-<link rel="stylesheet" type="text/css" href="./css/Dashboard.css?v=2"/>
+<link rel="stylesheet" type="text/css" href="./css/Dashboard.css?v=9"/>
 <link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">
 <script src="./js/jquery-3.3.1.min.js" type="text/javascript"></script>
 <script src="./js/jquery-ui.js"></script>
@@ -16,7 +20,7 @@
 <script type="text/javascript" src="./js/fnFindCellRowIndexes.js"></script>
 <script src="./js/dataTables.fixedHeader.min.js"></script>
 <script src="./js/three.min.js"></script>
-<script src="./js/globe/globe.js?v=4"></script>
+<script src="./js/globe/globe.js?v=7"></script>
 
 
 <script>
@@ -121,8 +125,365 @@
         setInterval(function (){
             GetHeartbeats();
         },30000)
+
+        var health_lock=false;
+        var lastHealth=null;
+        var healthTracked=null; // failure cause highlighted in the hourly chart (click a donut slice)
+        var healthHourSel=null; // bucket key (from health.php) whose failures the donut shows (click a bar)
+        var healthRange="24h", healthFrom="", healthTo="";
+        var healthSeq=0, healthRefetch=false; // drop responses for a window the user has since changed
+        var HEALTH_FAIL_PALETTE = ["#ff5a3c", "#ff8c1a", "#ffc23c", "#e0457b", "#b0413e", "#ff9e80"];
+        var HEALTH_EXTRA_PALETTE = ["#d98c5f", "#c9667a", "#e6b35c", "#a65e5e"];
+        var HEALTH_OTHER_COLOR = "#8a6d6d";
+        function GetHealth()
+        {
+            if(health_lock)
+                return;
+            health_lock=true;
+            var seq=healthSeq;
+            var params={range: healthRange};
+            if(healthRange==="custom")
+            {
+                params.from=healthFrom;
+                params.to=healthTo;
+            }
+            $.getJSON("./php/health.php", params).done(function(h){ if(seq===healthSeq) RenderHealth(h); })
+                .always(function(){
+                    health_lock=false;
+                    if(healthRefetch)
+                    {
+                        healthRefetch=false;
+                        GetHealth();
+                    }
+                });
+        }
+        setInterval(GetHealth,15000)
         
-        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php();ShowAllGeo()}); 
+        $(document).ready(function(){checkForeman();GetNews();QueryDatabase();GetHeartbeats();renderGraphs_php();GetHealth();ShowAllGeo()}); 
+        if(document.fonts)
+            document.fonts.ready.then(function(){ if(lastHealth) RenderHealth(lastHealth); });
+
+    function SetHealthRange(v)
+    {
+        document.getElementById("healthCustom").style.display = v === "custom" ? "" : "none";
+        if(v === "custom")
+        {
+            var f = document.getElementById("healthFrom"), t = document.getElementById("healthTo");
+            if(!f.value)
+            {
+                f.value = LocalInputValue(Date.now() - 86400000);
+                t.value = LocalInputValue(Date.now());
+            }
+            return;
+        }
+        healthRange = v;
+        ReloadHealth();
+    }
+    function LocalInputValue(ms)
+    {
+        var d = new Date(ms), p = function(n){ return (n < 10 ? "0" : "") + n; };
+        return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
+    }
+    function ApplyHealthCustom()
+    {
+        var f = document.getElementById("healthFrom").value, t = document.getElementById("healthTo").value;
+        if(!f || !t || f >= t)
+        {
+            document.getElementById("healthFoot").textContent = "pick a start before the end";
+            return;
+        }
+        healthRange = "custom";
+        healthFrom = f;
+        healthTo = t;
+        ReloadHealth();
+    }
+    function ReloadHealth()
+    {
+        healthSeq++;
+        healthHourSel = null;
+        healthTracked = null;
+        document.getElementById("healthFoot").textContent = "loading\u2026";
+        if(health_lock)
+            healthRefetch = true;
+        else
+            GetHealth();
+    }
+    function BucketLabel(sec)
+    {
+        if(sec % 86400 === 0) return sec === 86400 ? "day" : (sec / 86400) + " days";
+        if(sec % 3600 === 0) return sec === 3600 ? "hour" : (sec / 3600) + " h";
+        return (sec / 60) + " min";
+    }
+    // redraws the panel onto a canvas (tiles from their DOM boxes, charts via Plotly.toImage) and downloads it
+    function SaveHealthPng()
+    {
+        var panel = document.getElementById("health");
+        if(!lastHealth || !panel.clientWidth)
+            return;
+        var base = panel.getBoundingClientRect(), S = 2;
+        var fontFamily = getComputedStyle(panel).fontFamily;
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(base.width * S);
+        canvas.height = Math.round(base.height * S);
+        var ctx = canvas.getContext("2d");
+        ctx.scale(S, S);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, base.width, base.height);
+        function box(node)
+        {
+            var r = node.getBoundingClientRect();
+            return {x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height};
+        }
+        function text(node, str, align)
+        {
+            var cs = getComputedStyle(node), b = box(node);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(b.x, b.y, b.w, b.h);
+            ctx.clip();
+            ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+            ctx.fillStyle = cs.color;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = align || "left";
+            ctx.fillText(str === undefined ? node.textContent : str, align === "right" ? b.x + b.w : b.x, b.y + b.h / 2);
+            ctx.restore();
+        }
+
+        var foot = document.getElementById("healthFoot"), fb = box(foot), cy = fb.y + fb.h / 2;
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "left";
+        ctx.font = "bold 14px " + fontFamily;
+        ctx.fillStyle = "#8ad4ff";
+        ctx.fillText("System health", 10, cy);
+        var tx = 18 + ctx.measureText("System health").width;
+        ctx.font = "11px " + fontFamily;
+        ctx.fillStyle = "#aaa";
+        ctx.fillText(lastHealth.window.label + "  (" + lastHealth.window.from + " \u2013 " + lastHealth.window.to + " JLab time)", tx, cy);
+        text(foot, undefined, "right");
+
+        Array.prototype.forEach.call(panel.querySelectorAll(".health-kpi"), function(k){
+            var b = box(k);
+            ctx.fillStyle = "rgba(138, 212, 255, 0.06)";
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+            ctx.strokeStyle = "rgba(138, 212, 255, 0.35)";
+            ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+            ctx.fillStyle = getComputedStyle(k).borderLeftColor;
+            ctx.fillRect(b.x, b.y, 3, b.h);
+            var lbl = k.querySelector(".lbl");
+            text(lbl, lbl.textContent.toUpperCase());
+            text(k.querySelector(".val"));
+            text(k.querySelector(".sub"));
+        });
+
+        var charts = [document.getElementById("healthPie"), document.getElementById("healthHourly")];
+        Promise.all(charts.map(function(c){
+            return Plotly.toImage(c, {format: "png", width: c.clientWidth, height: c.clientHeight, scale: S});
+        })).then(function(urls){
+            return Promise.all(urls.map(function(u){
+                return new Promise(function(resolve, reject){
+                    var img = new Image();
+                    img.onload = function(){ resolve(img); };
+                    img.onerror = reject;
+                    img.src = u;
+                });
+            }));
+        }).then(function(imgs){
+            imgs.forEach(function(img, i){
+                var b = box(charts[i]);
+                ctx.drawImage(img, b.x, b.y, b.w, b.h);
+                ctx.strokeStyle = "rgba(138, 212, 255, 0.2)";
+                ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+            });
+            var a = document.createElement("a");
+            a.href = canvas.toDataURL("image/png");
+            a.download = "mcwrapper-health-" + lastHealth.window.to.replace(/[: ]/g, "-") + ".png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }).catch(function(err){
+            console.warn("Health PNG export failed", err);
+            foot.textContent = "PNG export failed";
+        });
+    }
+    function FmtNum(n)
+    {
+        return n === null || n === undefined ? "\u2013" : Number(n).toLocaleString();
+    }
+    function FmtDuration(sec)
+    {
+        if(sec === null || sec === undefined)
+            return "\u2013";
+        sec = Math.round(sec);
+        var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+        if(d > 0) return d + "d " + h + "h";
+        if(h > 0) return h + "h " + m + "m";
+        return m + "m";
+    }
+    function SetKpi(id, val, sub, level)
+    {
+        var el = document.getElementById(id);
+        el.className = "health-kpi" + (level ? " " + level : "");
+        el.querySelector(".val").textContent = val;
+        el.querySelector(".sub").textContent = sub || "";
+        el.title = sub || "";
+    }
+    function RenderHealth(h)
+    {
+        if(!h || h.error)
+        {
+            document.getElementById("healthFoot").textContent = "health unavailable" + (h && h.error ? " (" + h.error + ")" : "");
+            return;
+        }
+        lastHealth = h;
+        var q = h.queue;
+        SetKpi("hk-attempts", FmtNum(h.finished), FmtNum(h.created) + " new attempts");
+        var sp = h.successPct;
+        SetKpi("hk-success", sp === null ? "\u2013" : sp + "%", FmtNum(h.success) + " ok \u00b7 " + FmtNum(h.failed) + " failed",
+            sp === null ? "" : sp >= 90 ? "good" : sp >= 75 ? "warn" : sp >= 50 ? "orange" : "bad");
+        SetKpi("hk-idle", FmtNum(q.idle), "+" + FmtNum(h.createdPerHour) + "/h queued");
+        SetKpi("hk-running", FmtNum(q.running), FmtNum(q.held) + " held in window", q.held > q.running ? "warn" : "");
+        var net = h.createdPerHour - h.startsPerHour;
+        var trend = Math.abs(net) < 1 ? "queue steady" : "queue " + (net > 0 ? "\u2191 " : "\u2193 ") + FmtNum(Math.round(Math.abs(net))) + "/h";
+        if(q.idle === 0)
+            SetKpi("hk-eta", "0s", q.running === 0 ? "nothing idle or running" : "nothing idle", "good");
+        else if(h.etaHours === null)
+            SetKpi("hk-eta", "\u221e", "no completions in 24 h", "bad");
+        else
+            SetKpi("hk-eta", h.etaHours > 720 ? "> 30d" : FmtDuration(h.etaHours * 3600),
+                "at " + FmtNum(h.completionsPerHour) + "/h \u00b7 " + trend,
+                h.etaHours > 240 ? "bad" : h.etaHours >= 120 ? "orange" : h.etaHours >= 48 ? "warn" : "good");
+        SetKpi("hk-throughput", FmtNum(h.throughputPerHour) + "/h", "window average");
+        SetKpi("hk-starts", FmtNum(h.startsPerHour) + "/h", "avg over " + h.rateHours + " h");
+        SetKpi("hk-wall", FmtDuration(h.avgWallSec), "successful attempts");
+        document.getElementById("healthFoot").textContent = "updated " + new Date(h.generated).toLocaleTimeString()
+            + (h.window.live ? "" : " \u00b7 " + h.window.label);
+
+        var pieEl = document.getElementById("healthPie"), hourEl = document.getElementById("healthHourly");
+        // Plotly cannot measure a hidden tab; ShowHeaderTab re-renders when it becomes visible
+        if(!pieEl.clientWidth || !hourEl.clientWidth)
+            return;
+        var font = {color: "#ddd", size: 10, family: getComputedStyle(document.getElementById("health")).fontFamily};
+        var config = {displayModeBar: false};
+        var MAX_SLICES = 6, nB = h.buckets.length, bLabel = BucketLabel(h.window.bucketSec);
+        // global top causes fix the colours so a cause keeps its colour in the per-bucket donut
+        var topCauses = Object.keys(h.causes).slice(0, MAX_SLICES);
+        var causeColor = {other: HEALTH_OTHER_COLOR};
+        topCauses.forEach(function(k, i){ causeColor[k] = HEALTH_FAIL_PALETTE[i % HEALTH_FAIL_PALETTE.length]; });
+
+        // a locked bar is remembered by bucket key so it stays put as the window slides
+        var selIdx = null;
+        for(var bi = 0; bi < nB; bi++)
+            if(h.buckets[bi].k === healthHourSel)
+                selIdx = bi;
+        if(selIdx === null)
+            healthHourSel = null;
+        var src = selIdx === null ? h.causes : h.buckets[selIdx].causes;
+        var labels = [], values = [], other = 0;
+        Object.keys(src).sort(function(a, b){ return src[b] - src[a]; }).forEach(function(k){
+            if(selIdx === null ? topCauses.indexOf(k) >= 0 : labels.length < MAX_SLICES) { labels.push(k); values.push(src[k]); }
+            else other += src[k];
+        });
+        if(other > 0) { labels.push("other"); values.push(other); }
+        var failedShown = values.reduce(function(a, b){ return a + b; }, 0);
+        if(selIdx !== null || (healthTracked !== null && labels.indexOf(healthTracked) < 0))
+            healthTracked = null;
+        var extra = 0;
+        var colors = labels.map(function(l){ return causeColor[l] || HEALTH_EXTRA_PALETTE[extra++ % HEALTH_EXTRA_PALETTE.length]; });
+        function trackedCount(hourCauses)
+        {
+            var n = 0;
+            Object.keys(hourCauses).forEach(function(k){
+                var inTop = topCauses.indexOf(k) >= 0;
+                if((healthTracked === "other" && !inTop) || k === healthTracked)
+                    n += hourCauses[k];
+            });
+            return n;
+        }
+        // legend beside the donut when there is room, underneath otherwise
+        var pieWide = pieEl.clientWidth > 320;
+        var hint = function(t){ return " <span style='font-size:9px;color:#777'>(" + t + ")</span>"; };
+        // titles as left-aligned annotations: this Plotly build always centres layout.title, which hits the legends
+        var chartTitle = function(t){ return {text: t, showarrow: false, xref: "paper", yref: "paper", x: 0, y: 1,
+            xanchor: "left", yanchor: "bottom", yshift: 8, font: {color: "#8ad4ff", size: 12}}; };
+        var pieLayout = {
+            width: pieEl.clientWidth, height: pieEl.clientHeight,
+            paper_bgcolor: "black", plot_bgcolor: "black", font: font,
+            margin: {l: 8, r: 8, t: 30, b: 8}, showlegend: true,
+            uniformtext: {mode: "hide", minsize: 8},
+            legend: pieWide
+                ? {orientation: "v", x: 1, xanchor: "left", y: 0.5, yanchor: "middle", font: {color: "#ddd", size: 10}}
+                : {orientation: "h", x: 0.5, xanchor: "center", y: 0, yanchor: "top", font: {color: "#ddd", size: 9}}
+        };
+        if(values.length === 0)
+            pieLayout.annotations = [{text: "no failures", showarrow: false, font: {color: "#6fdc6f", size: 13}}];
+        else
+            pieLayout.annotations = [{text: "<b>" + FmtNum(failedShown) + "</b><br>failed", showarrow: false,
+                font: {color: "#ff5a3c", size: 11}, x: 0.5, y: 0.5, xref: "paper", yref: "paper"}];
+        pieLayout.annotations.push(chartTitle(selIdx !== null
+            ? "Failures " + (h.window.bucketSec >= 86400 ? h.buckets[selIdx].t.substr(5, 5) : h.buckets[selIdx].t.substr(5)) + hint("click bar to release")
+            : "Failure causes" + (values.length ? hint(healthTracked === null ? "click to track" : "click again to stop") : "")));
+        Plotly.react("healthPie", [{type: "pie", labels: labels, values: values, hole: 0.45, sort: false,
+            textinfo: "percent", textposition: "inside", insidetextorientation: "horizontal",
+            textfont: {size: 10}, hoverinfo: "label+value+percent",
+            pull: labels.map(function(l){ return l === healthTracked ? 0.08 : 0; }),
+            marker: {colors: colors, line: {color: "black", width: 1}}}], pieLayout, config);
+        if(!pieEl.healthClickBound)
+        {
+            pieEl.on("plotly_click", function(e){
+                if(healthHourSel !== null)
+                    return;
+                var label = e.points[0].label;
+                healthTracked = healthTracked === label ? null : label;
+                RenderHealth(lastHealth);
+            });
+            pieEl.healthClickBound = true;
+        }
+
+        var x = [], ok = [], bad = [], tracked = [], hover = [];
+        for(var i = 0; i < nB; i++)
+        {
+            var bk = h.buckets[i], hc = bk.causes;
+            var t = healthTracked === null ? 0 : trackedCount(hc);
+            x.push(bk.t);
+            ok.push(bk.ok);
+            tracked.push(t);
+            bad.push(bk.fail - t);
+            var lines = Object.keys(hc).sort(function(a, b){ return hc[b] - hc[a]; }).slice(0, 6)
+                .map(function(k){ return k + ": " + FmtNum(hc[k]); });
+            hover.push("<b>" + FmtNum(bk.fail) + " failed</b>" + (lines.length ? "<br>" + lines.join("<br>") : ""));
+        }
+        var opacity = x.map(function(v, i){ return selIdx === null || i === selIdx ? 1 : 0.3; });
+        var traces = [{type: "bar", x: x, y: ok, name: "ok", marker: {color: "#6fdc6f", opacity: opacity}, hoverinfo: "y+name"}];
+        if(healthTracked !== null)
+            traces.push({type: "bar", x: x, y: tracked, name: healthTracked, text: hover, textposition: "none", hoverinfo: "text",
+                marker: {color: colors[labels.indexOf(healthTracked)], line: {color: "#fff", width: 1}}});
+        traces.push({type: "bar", x: x, y: bad, name: healthTracked === null ? "failed" : "other failed", text: hover, textposition: "none", hoverinfo: "text",
+            marker: {color: healthTracked === null ? "#ff5a3c" : "rgba(255, 90, 60, 0.3)", opacity: opacity}});
+        Plotly.react("healthHourly", traces, {
+            width: hourEl.clientWidth, height: hourEl.clientHeight,
+            annotations: [chartTitle(healthTracked !== null ? "Tracking" : "Finished per " + bLabel + (selIdx === null ? hint("click a bar") : ""))],
+            barmode: "stack", bargap: 0.2,
+            paper_bgcolor: "black", plot_bgcolor: "black", font: font,
+            margin: {l: 52, r: 10, t: 30, b: 38}, showlegend: hourEl.clientWidth >= 420,
+            legend: {orientation: "h", x: 1, xanchor: "right", y: 1.02, yanchor: "bottom", font: {color: "#ddd", size: 10}},
+            xaxis: {title: "JLab time", titlefont: {size: 11, color: "#fff"}, type: "date", gridcolor: "#1a1a1a", zeroline: false},
+            yaxis: {title: "attempts / " + bLabel, titlefont: {size: 11, color: "#fff"}, gridcolor: "#222", zeroline: false}
+        }, config);
+        if(!hourEl.healthClickBound)
+        {
+            hourEl.on("plotly_click", function(e){
+                var k = lastHealth.buckets[e.points[0].pointNumber].k;
+                healthHourSel = healthHourSel === k ? null : k;
+                RenderHealth(lastHealth);
+            });
+            hourEl.healthClickBound = true;
+        }
+    }
+    var healthResizeTimer;
+    window.addEventListener("resize", function(){
+        clearTimeout(healthResizeTimer);
+        healthResizeTimer = setTimeout(function(){ if(lastHealth) RenderHealth(lastHealth); }, 200);
+    });
 
     document.addEventListener("mousemove",function (e){locX=e.clientX;locY=e.clientY;})
 
@@ -199,12 +560,13 @@
         }
 });
 
-// narrow windows show the globe and the graphs as two tabs (see Dashboard.css); wide windows show both
+// narrow: globe/health/graphs tabs; medium: globe + health/graphs tabs; wide: all three (see Dashboard.css)
 function ShowHeaderTab(which)
 {
     var info = document.getElementById("headerInfo");
-    info.className = info.className.replace(/\btab-(globe|graphs)\b/g, "").trim() + " tab-" + which;
+    info.className = info.className.replace(/\btab-(globe|health|graphs)\b/g, "").trim() + " tab-" + which;
     document.getElementById("tabGlobeBtn").className = which === "globe" ? "active" : "";
+    document.getElementById("tabHealthBtn").className = which === "health" ? "active" : "";
     document.getElementById("tabGraphsBtn").className = which === "graphs" ? "active" : "";
     // the globe canvas cannot size itself while hidden: let it re-measure now that it is visible
     window.dispatchEvent(new Event("resize"));
@@ -219,9 +581,8 @@ function ShowHeaderTab(which)
         {
             globe = new DAT.Globe( globe3d );
             var btnCss = "padding:4px 10px;margin-left:6px;cursor:pointer;" +
-                "background:rgba(0,0,0,0.65);border:1px solid #666;border-radius:4px;color:#66ccff;font:12px Arial,sans-serif;";
-            var btnBox = document.createElement("div");
-            btnBox.style.cssText = "position:absolute;top:8px;right:8px;z-index:2;";
+                "background:rgba(0,0,0,0.65);border:1px solid #666;border-radius:4px;color:#66ccff;font:12px var(--dashboard-font);";
+            var btnBox = document.getElementById("globeControls");
             var activeBtn = document.createElement("button");
             activeBtn.id = "globeAllBtn";
             activeBtn.textContent = "Total active";
@@ -237,7 +598,6 @@ function ShowHeaderTab(which)
             btnBox.appendChild(activeBtn);
             btnBox.appendChild(everythingBtn);
             globe3d.style.position = "relative";
-            globe3d.appendChild(btnBox);
         }
         catch(err)
         {
@@ -246,7 +606,7 @@ function ShowHeaderTab(which)
             globe = undefined;
             console.warn("Globe disabled: WebGL unavailable.", err);
             $(globe3d).empty().append($("<div>").text("3D globe unavailable: WebGL is not supported or is disabled in this browser.")
-                .css({color: "#aaa", font: "14px Arial,sans-serif", padding: "20px"}));
+                .css({color: "#aaa", font: "14px var(--dashboard-font)", padding: "20px"}));
         }
     }
   }
@@ -347,18 +707,38 @@ function GeoHex(c)
     return "#" + ("000000" + c.toString(16)).slice(-6);
 }
 
-// packet rate scales linearly with running jobs, from 0.2/s up to 2.5/s at the busiest route
-function GeoPacketInterval(running, maxRunning)
+function GeoBarSegments(site, height)
 {
-    var rate = 0.2 + 2.3 * (running > 0 ? running : 0) / Math.max(1, maxRunning);
+    var other = Math.max(0, site.jobs - site.succeeded - site.running - site.failed);
+    var remaining = other + site.succeeded + site.running;
+    var total = remaining + site.failed;
+    if(!total)
+        return [{ fraction: 1, color: GEO_COLORS.other }];
+    var failedFraction = site.failed > 0 ? Math.min(1, Math.max(4 / height, site.failed / total)) : 0;
+    var segments = [];
+    [ [other, GEO_COLORS.other], [site.succeeded, GEO_COLORS.succeeded], [site.running, GEO_COLORS.running] ].forEach(function(part){
+        if(part[0] > 0)
+            segments.push({ fraction: (1 - failedFraction) * part[0] / remaining, color: part[1] });
+    });
+    if(site.failed > 0)
+        segments.push({ fraction: failedFraction, color: GEO_COLORS.failed });
+    return segments;
+}
+
+// packet rate scales with displayed bar height, from 0.2/s up to 2.5/s
+function GeoPacketInterval(height)
+{
+    var rate = 0.2 + 2.3 * Math.max(0, Math.min(1, (height - 8) / 100));
     return 1000 / rate;
 }
 
-// tolerate a cached globe.js without setRate
-function GeoSetRate(arc, ms)
+// tolerate a cached globe.js without the packet controls
+function GeoSetPackets(arc, site, routeCount)
 {
     if(arc && arc.setRate)
-        arc.setRate(ms);
+        arc.setRate(GeoPacketInterval(site.h) * (routeCount || 1));
+    if(arc && arc.setPacketColors)
+        arc.setPacketColors(site.segments.map(function(segment){ return segment.color; }));
 }
 
 function ShowProjectGeo(projID)
@@ -514,11 +894,10 @@ function RenderProjectGeo(data)
         globe.focusOn(f.lat, f.lon);
     }
 
-    var maxJobs = 1, maxRunning = 0;
+    var maxJobs = 1;
     for(var i=0;i<sites.length;i++)
     {
         maxJobs = Math.max(maxJobs, sites[i].jobs);
-        maxRunning = Math.max(maxRunning, sites[i].running);
     }
 
     var step = sites.length ? Math.min(150, 3000 / sites.length) : 0;
@@ -533,6 +912,7 @@ function RenderProjectGeo(data)
         seen[id] = true;
         var state = { lat: s.lat, lon: s.lon, h: 8 + 100 * Math.sqrt(s.jobs / maxJobs), hex: GEO_COLORS[GeoSiteState(s)] };
         state.color = new THREE.Color(state.hex);
+        state.segments = GeoBarSegments(s, state.h);
 
         var prev = projGeo.sites[id];
         if(prev)
@@ -541,9 +921,9 @@ function RenderProjectGeo(data)
             projGeo.sites[id] = state;
             if(state.arc && prev.hex !== state.hex)
                 state.arc.setColor(state.hex);
-            GeoSetRate(state.arc, GeoPacketInterval(s.running, maxRunning));
+            GeoSetPackets(state.arc, state);
             if(globe.hasBar(id))
-                globe.setBar(id, s.lat, s.lon, state.h, state.color);
+                globe.setBar(id, s.lat, s.lon, state.h, state.color, state.segments);
             continue;
         }
         projGeo.sites[id] = state;
@@ -551,9 +931,9 @@ function RenderProjectGeo(data)
             state.arc = globe.launch(projGeo.origin, s, 600 + step * launched++, state.hex, function(){
                 var cur = projGeo.sites[id];
                 if(cur)
-                    globe.setBar(id, cur.lat, cur.lon, cur.h, cur.color);
+                    globe.setBar(id, cur.lat, cur.lon, cur.h, cur.color, cur.segments);
             });
-            GeoSetRate(state.arc, GeoPacketInterval(s.running, maxRunning));
+            GeoSetPackets(state.arc, state);
         })(id);
     }
     for(var id in projGeo.sites)
@@ -573,7 +953,7 @@ function GeoLandBar(id)
 {
     var s = projGeo.sites[id];
     if(s)
-        globe.setBar(id, s.lat, s.lon, s.h, s.color);
+        globe.setBar(id, s.lat, s.lon, s.h, s.color, s.segments);
 }
 
 function RenderAllGeo(data)
@@ -600,6 +980,7 @@ function RenderAllGeo(data)
         var s = sites[i];
         var hex = GEO_COLORS[GeoSiteState(s)];
         newSites[s.cell] = { lat: s.lat, lon: s.lon, h: 8 + 100 * Math.sqrt(s.jobs / maxJobs), hex: hex, color: new THREE.Color(hex) };
+        newSites[s.cell].segments = GeoBarSegments(s, newSites[s.cell].h);
     }
     for(var id in projGeo.sites)
         if(!newSites[id])
@@ -626,39 +1007,47 @@ function RenderAllGeo(data)
     }
 
     var step = routes.length ? Math.min(150, 4000 / Math.min(routes.length, GEO_ALL_MAX_STREAMERS)) : 0;
-    var launched = 0, maxRunning = 0;
-    for(var i=0;i<routes.length;i++)
-        maxRunning = Math.max(maxRunning, routes[i].running);
+    var launched = 0;
     for(var i=0;i<routes.length;i++)
     {
         var r = routes[i];
         var id = r.origin + ">" + r.site;
         var hex = GEO_COLORS[GeoSiteState(r)];
-        var rate = GeoPacketInterval(r.running, maxRunning);
         var prev = projGeo.routes[id];
         if(prev)
         {
             if(prev.arc && prev.hex !== hex)
                 prev.arc.setColor(hex);
-            GeoSetRate(prev.arc, rate);
             prev.hex = hex;
             continue;
         }
         if(arcs >= GEO_ALL_MAX_STREAMERS)
         {
-            projGeo.routes[id] = { arc: null, hex: hex };
+            projGeo.routes[id] = { arc: null, hex: hex, site: r.site };
             if(!globe.hasBar(r.site))
                 GeoLandBar(r.site);
             continue;
         }
         arcs++;
         (function(site){
-            projGeo.routes[id] = { hex: hex, arc: globe.launch(r.from, r.to, 600 + step * launched++, hex, function(){
+            projGeo.routes[id] = { hex: hex, site: site, arc: globe.launch(r.from, r.to, 600 + step * launched++, hex, function(){
                 if(!globe.hasBar(site))
                     GeoLandBar(site);
             }) };
-            GeoSetRate(projGeo.routes[id].arc, rate);
         })(r.site);
+    }
+    var routesPerSite = {};
+    for(var id in projGeo.routes)
+    {
+        var route = projGeo.routes[id];
+        if(route.arc && route.arc.hasPath !== false)
+            routesPerSite[route.site] = (routesPerSite[route.site] || 0) + 1;
+    }
+    for(var id in projGeo.routes)
+    {
+        var route = projGeo.routes[id];
+        if(route.arc)
+            GeoSetPackets(route.arc, projGeo.sites[route.site], routesPerSite[route.site]);
     }
     SetGeoLegend(data, null);
 }
@@ -680,7 +1069,7 @@ function SetGeoLegend(data, message)
         // which would stop the auto-rotation
         legend.addEventListener("mousedown", function(e){ e.stopPropagation(); }, false);
         legend.style.cssText = "position:absolute;top:8px;left:8px;z-index:2;max-width:45%;padding:6px 10px;" +
-            "background:rgba(0,0,0,0.65);border:1px solid #444;border-radius:4px;color:#fff;font:12px/16px Arial,sans-serif;";
+            "background:rgba(0,0,0,0.65);border:1px solid #444;border-radius:4px;color:#fff;font:12px/16px var(--dashboard-font);";
         globe3d.appendChild(legend);
     }
     $(legend).empty();
@@ -817,21 +1206,7 @@ function GetHeartbeats()
                 {
                     //console.log(this.responseText)
                     hist_table=JSON.parse(this.responseText);
-                    //console.log("HB TABLE");
-                    //console.log(hist_table)
-
-                    StatusLight("MCOverlord-hb",hist_table.MCOverlord,2);
-
-                    //Do DRONE
-                    StatusLight("MCDrone-hb",hist_table.MCDrone,1);
-                    
-                    StatusLight("MCSubmitter-hb",hist_table.MCSubmitter,1);
-                    LastSubmit(hist_table.LastSub[0]);
-                    
-                    //DO MOVER
-                    //StatusLight("MCMover-hb",hist_table.MCMover,2);
-                    
-
+                    RenderHeartbeats(hist_table);
                 }
                 
             }
@@ -842,66 +1217,65 @@ function GetHeartbeats()
         xmlhttp.open("GET","./php/mchb.php",true);
         xmlhttp.send();
   }
-function LastSubmit(lastAttempt)
+// stale: seconds without a new run before the service counts as silent; maxRun: a run longer than this looks stuck
+var HB_SERVICES = [
+    {key: "MCOverlord", id: "hb-overlord", stale: 300, maxRun: 1800},
+    {key: "MCDrone", id: "hb-drone", stale: 300, maxRun: 900},
+    {key: "MCSubmitter", id: "hb-submitter", stale: 900, maxRun: 86400}
+];
+function FmtAgo(sec)
 {
-    textEle=document.getElementById("lastSubmitloc");
-    if(textEle)
-    {
-        textEle.innerHTML=lastAttempt.BatchSystem;
-    }
+    if(sec < 90) return sec + "s";
+    if(sec < 5400) return Math.round(sec / 60) + "m";
+    if(sec < 172800) return Math.round(sec / 3600) + "h";
+    return Math.round(sec / 86400) + "d";
 }
-function StatusLight(light_name,poll_table,cron_freq)
+function RenderHeartbeats(data)
 {
-    var LED=document.getElementById(light_name);
-    if(!LED || poll_table.length==0)
-    {
+    if(!data.hb)
         return;
-    }
-    //DO MOVER
-    Running=0;
-    Now=Date.now();
-    Recent=false;
-    for(var i=0;i<poll_table.length;i++)
-    {
-
-        //console.log(hist_table.MCOverlord[i].StartTime)
-        //console.log(Date.parse(hist_table.MCOverlord[i].StartTime))
-        if(poll_table[i].Status=="Success" || poll_table[i].Status=="Running" )
+    HB_SERVICES.forEach(function(s){
+        var card = document.getElementById(s.id);
+        var runs = data.hb[s.key] || [];
+        var state, text, sub = "";
+        if(runs.length === 0)
         {
-            Running+=1;
+            state = "bad"; text = "no heartbeats";
         }
-
-                        
-    }
-    if(Now-getTimestampFromDate(poll_table[0].StartTime)<2*cron_freq*60*1000 || poll_table[0].Status=="Running")
-        Recent=true;
-
-
-    if(poll_table[0].Status=="Running")
-    {
-        if(LED.className != "led-blink-green" )
-            { LED.className="led-blink-green"}
         else
-            {LED.className="led-green" }
-    }
-    else if(Recent && Running == 5)
-    {
-        LED.className="led-green";
-    }
-    else if(Recent==false)
-    {
-        LED.className="led-red"
-    }
-    else{
-        if(poll_table[0].Status=="Running" && LED.className != "led-blink-green")
         {
-            LED.className="led-blink-green"
+            var last = runs[0];
+            if(last.status === "Running" && last.age > s.maxRun)
+            {
+                state = "warn"; text = "running " + FmtAgo(last.age);
+                sub = "stuck? expected < " + FmtAgo(s.maxRun);
+            }
+            else if(last.status === "Running")
+            {
+                state = "good live"; text = "running";
+                sub = "started " + FmtAgo(last.age) + " ago";
+            }
+            else if(last.age > s.stale)
+            {
+                state = "bad"; text = "silent " + FmtAgo(last.age);
+                sub = "last run " + last.status.toLowerCase();
+            }
+            else if(last.status === "Fail")
+            {
+                state = "bad"; text = "last run failed";
+                sub = FmtAgo(last.age) + " ago";
+            }
+            else
+            {
+                state = "good"; text = "ok";
+                sub = FmtAgo(last.age) + " ago \u00b7 took " + FmtAgo(last.dur);
+            }
         }
-        else if(hist_table.MCMover[0].Status!="Running")
-        {
-            LED.className="led-red-blinking"
-        }
-    }
+        card.className = "hb-card " + state;
+        card.querySelector(".hb-state").textContent = text;
+        card.querySelector(".hb-sub").textContent = sub;
+        card.title = sub;
+    });
 }
 
 
@@ -1785,7 +2159,7 @@ function GetNews()
                   A fake / hidden checkbox is used as click reciever,
                   so you can use the :checked selector on it.
                   -->
-                  <input type="checkbox" />
+                  <input type="checkbox" aria-label="Toggle navigation" title="Toggle navigation" />
                   
                   <!--
                   Some spans to act as a hamburger.
@@ -1814,10 +2188,46 @@ function GetNews()
 <div class="header-info tab-globe" id="headerInfo">
         <div id="headerTabs">
             <button type="button" id="tabGlobeBtn" class="active" onclick="ShowHeaderTab('globe')">Globe</button>
+            <button type="button" id="tabHealthBtn" onclick="ShowHeaderTab('health')">Health</button>
             <button type="button" id="tabGraphsBtn" onclick="ShowHeaderTab('graphs')">Graphs</button>
         </div>
-        <div id="globe" width="1250">
-
+        <div id="globePanel">
+            <div id="globeControls" role="group" aria-label="Globe scope"></div>
+            <div id="globe"></div>
+        </div>
+            <div id="health">
+                <div class="health-title">System health
+                    <select id="healthRange" class="health-range" title="Window for outcomes and charts; idle/running/queue figures are always current" onchange="SetHealthRange(this.value)">
+                        <option value="1h">last 1 h</option>
+                        <option value="2h">last 2 h</option>
+                        <option value="6h">last 6 h</option>
+                        <option value="12h">last 12 h</option>
+                        <option value="24h" selected>last 24 h</option>
+                        <option value="7d">last 7 days</option>
+                        <option value="30d">last 30 days</option>
+                        <option value="custom">custom&hellip;</option>
+                    </select>
+                    <span id="healthCustom" class="health-custom" style="display:none" title="JLab (US Eastern) time">
+                        <input type="datetime-local" id="healthFrom" class="health-range"> &ndash;
+                        <input type="datetime-local" id="healthTo" class="health-range">
+                        <button type="button" class="health-range" onclick="ApplyHealthCustom()">Go</button>
+                    </span>
+                    <button type="button" class="health-range" onclick="SaveHealthPng()" title="Save the Health panel as a PNG">&#x2913; PNG</button>
+                    <span class="health-foot" id="healthFoot">loading&hellip;</span></div>
+                <div class="health-kpis">
+                    <div class="health-kpi" id="hk-attempts"><div class="lbl">Attempts finished</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-success"><div class="lbl">Success</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-idle"><div class="lbl">Idle</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-running"><div class="lbl">Running / held</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-eta"><div class="lbl">Queue empty in</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-throughput"><div class="lbl">Throughput</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-starts"><div class="lbl">Start rate</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-wall"><div class="lbl">Avg wall (ok)</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                </div>
+                <div class="health-charts">
+                    <div class="health-chart" id="healthPie"></div>
+                    <div class="health-chart" id="healthHourly"></div>
+                </div>
             </div>
             <div id="graphs">
             
@@ -1832,47 +2242,10 @@ function GetNews()
 <div class="header-hb">
     <div>
     <img id="logo" src="./imgs/whitelogo.png" class="logo"  alt="logo" width="125" height="160" >
-        <br>
-        <br>
-
-        <div class="container">
-                <div class="led-box">
-                    <div class="led-green" id="MCDrone-hb">
-                            
-                    </div>
-                </div>
-                <div class="led-box">
-                        <div class="led-green" id="MCSubmitter-hb">
-                            <p id="lastSubmitloc">loading</p>
-                        
-                            
-                            <p>Dispatcher/Submitter</p>
-                        </div>
-                        
-                        
-
-                </div>
-            </div>
-            <br>
-            <hr>
-            <div class="container">
-                    <div class="led-box">
-                        <div class="led-green" id="MCOverlord-hb">
-                                
-                        </div>
-                        <p>Monitoring</p>
-                    </div>
-                </div>
-                <br>
-                <hr>
-            <!--<div class="container">
-                    <div class="led-box">
-                        <div class="led-green" id="MCMover-hb">
-                                
-                        </div>
-                        <p>Data Mover</p>
-                    </div>
-                </div>-->
+        <div class="hb-title">Services</div>
+        <div class="hb-card" id="hb-drone"><div class="hb-name">Dispatcher</div><div class="hb-state">&ndash;</div><div class="hb-sub"></div></div>
+        <div class="hb-card" id="hb-submitter"><div class="hb-name">Submitter</div><div class="hb-state">&ndash;</div><div class="hb-sub"></div></div>
+        <div class="hb-card" id="hb-overlord"><div class="hb-name">Monitoring</div><div class="hb-state">&ndash;</div><div class="hb-sub"></div></div>
 </div>
 </div>
 </div>

@@ -92,13 +92,13 @@ DAT.Globe = function(container, opts) {
   var RADIUS = 200;
   var overlay;          // project view objects (pulses, streamers, bars)
   var tweens = [];      // fn(now) -> true when finished
-  var bars = {};        // id -> mesh
+  var bars = {};        // id -> group
   var glowTexture;
 
   function init() {
 
     container.style.color = '#fff';
-    container.style.font = '13px/20px Arial, sans-serif';
+    container.style.font = '13px/20px var(--dashboard-font, sans-serif)';
 
     var shader, uniforms, material;
     w = container.offsetWidth || window.innerWidth;
@@ -640,7 +640,7 @@ DAT.Globe = function(container, opts) {
         if (onLand) onLand();
         return true;
       });
-      return { stop: function() {}, setColor: function() {}, setRate: function() {} };
+      return { hasPath: false, stop: function() {}, setColor: function() {}, setRate: function() {}, setPacketColors: function() {} };
     }
 
     var N = 80, tail = 22, base = 0.12;
@@ -674,6 +674,7 @@ DAT.Globe = function(container, opts) {
     // looping "data packets" after the streamer settles; interval 0 = none (set via setRate)
     var pTail = 12, pPeak = 0.85, pTravel = flight * 0.9, pLen = N - 1 + pTail;
     var interval = 0, packets = [], heads = [head];
+    var packetColors = [color], packetColorIndex = 0;
     var nextSpawn = start + total + Math.random() * 1000, idleReset = false, stopped = false;
 
     function setBase() {
@@ -719,10 +720,11 @@ DAT.Globe = function(container, opts) {
       if (!landed) { landed = true; head.scale.set(4, 4, 1); if (onLand) onLand(); }
       geo.setDrawRange(0, N);
       if (interval > 0 && now >= nextSpawn) {
-        packets.push(now);
+        packets.push({ start: now, color: packetColors[packetColorIndex].clone() });
+        packetColorIndex = (packetColorIndex + 1) % packetColors.length;
         nextSpawn = now + interval * (0.75 + 0.5 * Math.random());
       }
-      while (packets.length && (now - packets[0]) / pTravel > 1) packets.shift();
+      while (packets.length && (now - packets[0].start) / pTravel > 1) packets.shift();
       if (!packets.length) {
         if (!idleReset) {
           setBase();
@@ -743,13 +745,15 @@ DAT.Globe = function(container, opts) {
       }
       for (var p = 0; p < heads.length; p++) {
         if (p >= packets.length) { heads[p].visible = false; continue; }
-        var ph = (now - packets[p]) / pTravel * pLen;
+        var packetColor = packets[p].color;
+        var ph = (now - packets[p].start) / pTravel * pLen;
         for (var jj = Math.max(0, Math.ceil(ph - pTail)); jj <= Math.min(N - 1, Math.floor(ph)); jj++) {
           var kk = Math.max(base, pPeak * (1 - (ph - jj) / pTail));
-          if (color.r * kk + color.g * kk + color.b * kk > colors[3 * jj] + colors[3 * jj + 1] + colors[3 * jj + 2]) {
-            colors[3 * jj] = color.r * kk; colors[3 * jj + 1] = color.g * kk; colors[3 * jj + 2] = color.b * kk;
+          if (packetColor.r * kk + packetColor.g * kk + packetColor.b * kk > colors[3 * jj] + colors[3 * jj + 1] + colors[3 * jj + 2]) {
+            colors[3 * jj] = packetColor.r * kk; colors[3 * jj + 1] = packetColor.g * kk; colors[3 * jj + 2] = packetColor.b * kk;
           }
         }
+        heads[p].material.color.copy(packetColor);
         heads[p].visible = ph <= N - 1;
         if (heads[p].visible) heads[p].position.copy(pts[Math.round(ph)]);
       }
@@ -757,11 +761,20 @@ DAT.Globe = function(container, opts) {
       return false;
     });
     return {
+      hasPath: true,
       stop: function() { stopped = true; },
       setColor: function(c) {
         color.set(c);
-        for (var q = 0; q < heads.length; q++) heads[q].material.color.set(c);
+        if (!landed) head.material.color.copy(color);
         idleReset = false;
+      },
+      setPacketColors: function(palette) {
+        packetColors = palette.length ? palette.map(function(value) { return new THREE.Color(value); }) : [color];
+        packetColorIndex %= packetColors.length;
+        for (var index = 0; index < packets.length; index++) {
+          if (!packetColors.some(function(candidate) { return candidate.equals(packets[index].color); }))
+            packets[index].color.copy(packetColors[index % packetColors.length]);
+        }
       },
       // ms between packets; 0 stops new packets
       setRate: function(ms) {
@@ -790,20 +803,37 @@ DAT.Globe = function(container, opts) {
   }
 
   // Create (growing from 0) or retarget a bar.
-  function setBar(id, lat, lng, height, color) {
+  function setBar(id, lat, lng, height, color, segments) {
     var bar = bars[id];
+    var isNew = !bar;
     if (!bar) {
-      bar = new THREE.Mesh(barGeometry, new THREE.MeshBasicMaterial({ color: color }));
+      bar = new THREE.Group();
       bar.position.copy(latLngToVec3(lat, lng, RADIUS));
       bar.lookAt(new THREE.Vector3(0, 0, 0));
       bar.scale.z = 0.1;
       overlay.add(bar);
       bars[id] = bar;
-      tweenBarHeight(bar, height, 1100, easeOutBack);
-    } else {
-      bar.material.color.set(color);
-      tweenBarHeight(bar, height, 800, easeOutCubic);
     }
+    segments = segments && segments.length ? segments : [{ fraction: 1, color: color }];
+    var offset = 0;
+    for (var index = 0; index < segments.length; index++) {
+      var segment = segments[index];
+      var mesh = bar.children[index];
+      if (!mesh) {
+        mesh = new THREE.Mesh(barGeometry, new THREE.MeshBasicMaterial());
+        bar.add(mesh);
+      }
+      mesh.material.color.set(segment.color);
+      mesh.position.z = -offset;
+      mesh.scale.z = segment.fraction;
+      offset += segment.fraction;
+    }
+    while (bar.children.length > segments.length) {
+      var extra = bar.children[bar.children.length - 1];
+      bar.remove(extra);
+      disposeObject(extra);
+    }
+    tweenBarHeight(bar, height, isNew ? 1100 : 800, isNew ? easeOutBack : easeOutCubic);
   }
 
   function removeBar(id) {
