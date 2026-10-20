@@ -71,6 +71,22 @@ if ($LSresult->num_rows > 0) {
 }
 $data["LastSub"]=$LS_data;
 
+// ages computed by the DB so the browser's clock/timezone does not matter; newest run first
+$hb = array();
+foreach (array("MCOverlord", "MCDrone", "MCSubmitter") as $hbTable) {
+    $runs = array();
+    $hbRes = $conn->query("SELECT Status, TIMESTAMPDIFF(SECOND, StartTime, NOW()) AS age,
+        TIMESTAMPDIFF(SECOND, StartTime, COALESCE(EndTime, NOW())) AS dur FROM " . $hbTable . " ORDER BY ID DESC LIMIT 1");
+    if ($hbRes) {
+        while ($r = $hbRes->fetch_assoc()) {
+            $runs[] = array("status" => $r["Status"], "age" => intval($r["age"]), "dur" => intval($r["dur"]));
+        }
+        $hbRes->free();
+    }
+    $hb[$hbTable] = $runs;
+}
+$data["hb"]=$hb;
+
 $conn->close();
 
 echo json_encode($data);

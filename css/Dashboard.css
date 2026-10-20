@@ -1,4 +1,11 @@
+:root {
+    --dashboard-font: "Geist", sans-serif;
+}
 
+:root body, :root button, :root input, :root select, :root textarea, :root .ui-widget,
+:root .ui-widget button, :root .ui-widget input, :root .ui-widget select, :root .ui-widget textarea {
+    font-family: var(--dashboard-font);
+}
 
 html, body{
     height:100%;
@@ -259,54 +266,34 @@ thead
 }
 .header-block
 {
-    float:left;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 160px;
+    gap: 12px;
+    align-items: start;
+    box-sizing: border-box;
+    padding: 12px;
     background: #000000;
     width: 100%;
-    height: 500;
 }
-@media only screen and (min-width:1515px)
-{
 .header-info
 {
-    float:right;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px 16px;
+    min-width: 0;
     background: #000000;
-    width: 80%;
-    visibility: visible;
-    overflow: auto;
-    float:left;
-    /*clear:both;*/
-}
-}
-@media only screen and (max-width:1515px)
-{
-.header-info
-{
-    float:right;
-    background: #000000;
-    width: 80%;
-    visibility: visible;
-    overflow: auto;
-    float:left;
-    /*clear:both;*/
-}
 }
 .header-menu
 {
-    float:left;
+    position: relative;
+    z-index: 10;
     background:#000000;
-    width: 10%;
-    height:500;
-    margin:auto;
-    overflow: hidden;
+    min-width: 0;
 }
 .header-hb
 {
-    float:right;
     background:#000000;
-    width: 10%;
-    height:500px;
-    margin:auto;
-    overflow: hidden;
+    min-width: 0;
 }
 .table-block
 {
@@ -533,44 +520,36 @@ hr { width: 85%;
     50% { background-color: rgba(102, 255, 0, 0.226); box-shadow: rgba(219, 255, 198, 0.945) 0 -1px 7px 1px, inset #3c7c00 0 -1px 9px, rgb(102, 255, 0) 0 2px 0; }
     to { background-color: rgb(0, 255, 13); }
 }
-@media only screen and (min-width:1515px)
-{
 #graphs
 {
-    width: 600px;
-    float: right;
+    min-width: 0;
     animation-name: slideInDown;
     animation-duration: 2s;
     animation-iteration-count: 1;
     animation-fill-mode:both;
     animation-delay:5s;
 }
-}
-@media only screen and (max-width:1515px)
-{
-#graphs
-{
-    width: 80%;
-    float: left;
-}
-}
 
 .graph
 {
-    width: 600px;
-	height: 250px;
-    float:right;
-    /*position:block;*/
-    margin:auto;
-	background: black;
+    display: block;
+    width: 100%;
+    height: 228px;
+    object-fit: contain;
+    background: black;
 }
-@media only screen and (min-width:1515px) {
+#globePanel {
+    min-width: 0;
+}
+#globeControls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 36px;
+}
 #globe {
-    padding-left: 0%;
-	width: 50%;
-	height: 500px;
-    float:left;
-    margin-left:0px;
+    width: 100%;
+    height: 420px;
     background: black;
     animation-name: fadeIn;
     animation-duration: 3s;
@@ -578,50 +557,171 @@ hr { width: 85%;
     animation-fill-mode:both;
     animation-delay:1.5s;
 }
+@media only screen and (max-width:1514px) {
+    /* narrow: globe, health and graphs are all tabs */
+    .header-info.tab-globe #health, .header-info.tab-globe #graphs,
+    .header-info.tab-health #globePanel, .header-info.tab-health #graphs,
+    .header-info.tab-graphs #globePanel, .header-info.tab-graphs #health { display: none; }
+    .header-info #headerTabs { display: block; }
+    #globePanel { width: 100%; max-width: 520px; justify-self: center; }
 }
-@media only screen and (max-width:1515px) {
-    #globe {
-        padding-left: 0%;
-        width: 100%;
-        height: 500px;
-        float:left;
-        margin-left:0px;
-        background: black;
-        visibility: visible;
-    }
-    .header-info.tab-graphs #globe { display: none; }
-    .header-info.tab-globe #graphs { display: none; }
-    #headerTabs {
-        display: block;
-        clear: both;
-        padding: 4px 0;
-    }
-    #headerTabs button {
-        background: rgba(0, 0, 0, 0.6);
-        color: #8ad4ff;
-        border: 1px solid #8ad4ff;
-        border-radius: 3px;
-        padding: 4px 14px;
-        margin-right: 6px;
-        cursor: pointer;
-    }
-    #headerTabs button.active {
-        background: #8ad4ff;
-        color: #000;
-    }
+#headerTabs {
+    display: none;
+    padding: 4px 0;
 }
-@media only screen and (min-width:1515px) {
-    #headerTabs { display: none; }
+#headerTabs button {
+    background: rgba(0, 0, 0, 0.6);
+    color: #8ad4ff;
+    border: 1px solid #8ad4ff;
+    border-radius: 3px;
+    padding: 4px 14px;
+    margin-right: 6px;
+    cursor: pointer;
+}
+#headerTabs button.active {
+    background: #8ad4ff;
+    color: #000;
+}
+/* medium: globe always shown, health/graphs share the right side (health by default) */
+@media only screen and (min-width:1515px) and (max-width:1899px) {
+    .header-info { grid-template-columns: minmax(360px, 0.8fr) minmax(580px, 1.2fr); }
+    #globePanel { grid-column: 1; grid-row: 1 / span 2; }
+    .header-info #headerTabs { display: block; grid-column: 2; }
+    #health, #graphs { grid-column: 2; }
+    #tabGlobeBtn { display: none; }
+    .header-info.tab-globe #tabHealthBtn { background: #8ad4ff; color: #000; }
+    .header-info.tab-globe #graphs, .header-info.tab-health #graphs,
+    .header-info.tab-graphs #health { display: none; }
+}
+/* wide: globe | health | graphs side by side */
+@media only screen and (min-width:1900px) {
+    .header-info { grid-template-columns: minmax(360px, 520px) minmax(580px, 1.2fr) minmax(400px, 1fr); }
+}
+#health {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 456px;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    background: black;
+    color: #ddd;
+    font: 12px var(--dashboard-font);
+    overflow: hidden;
+    animation-name: fadeIn;
+    animation-duration: 3s;
+    animation-iteration-count: 1;
+    animation-fill-mode: both;
+    animation-delay: 1.5s;
+}
+.health-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    color: #8ad4ff;
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+.health-title .health-foot { margin-left: auto; }
+.health-range {
+    background: #000;
+    color: #8ad4ff;
+    border: 1px solid rgba(138, 212, 255, 0.5);
+    border-radius: 3px;
+    font: 11px var(--dashboard-font);
+    padding: 1px 4px;
+    color-scheme: dark;
+    cursor: pointer;
+}
+.health-range:hover, .health-range:focus { border-color: #8ad4ff; outline: none; }
+.health-custom { display: flex; flex-wrap: wrap; gap: 4px; font-weight: normal; font-size: 11px; color: #777; }
+.health-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    flex: 0 0 auto;
+}
+.health-kpi {
+    border: 1px solid rgba(138, 212, 255, 0.35);
+    border-left: 3px solid #8ad4ff;
+    border-radius: 4px;
+    background: rgba(138, 212, 255, 0.06);
+    padding: 3px 8px;
+    min-width: 0;
+}
+.health-kpi .lbl { color: #8ad4ff; font-size: 10px; text-transform: uppercase; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.health-kpi .val { color: #fff; font-size: 19px; font-weight: bold; line-height: 1.15; white-space: nowrap; }
+.health-kpi .sub { color: #999; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.health-kpi.good { border-left-color: #6fdc6f; }
+.health-kpi.good .val { color: #6fdc6f; }
+.health-kpi.warn { border-left-color: #ffc23c; }
+.health-kpi.warn .val { color: #ffc23c; }
+.health-kpi.orange { border-left-color: #ff8c1a; }
+.health-kpi.orange .val { color: #ff8c1a; }
+.health-kpi.bad { border-left-color: #ff5a3c; }
+.health-kpi.bad .val { color: #ff5a3c; }
+.health-charts { display: flex; gap: 8px; flex: 1 1 auto; min-height: 0; margin-top: 8px; }
+.health-chart {
+    min-width: 0;
+    border: 1px solid rgba(138, 212, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+#healthPie { flex: 2 1 0; }
+#healthHourly { flex: 3 1 0; }
+.health-foot { color: #777; font-size: 10px; font-weight: normal; }
+.header-hb #logo { max-width: 100%; height: auto; margin: 4px auto 6px; }
+.hb-title {
+    color: #8ad4ff;
+    font: bold 12px var(--dashboard-font);
+    margin: 0 6px 4px;
+}
+.hb-card {
+    margin: 0 6px 6px;
+    padding: 3px 6px 4px;
+    border: 1px solid rgba(138, 212, 255, 0.35);
+    border-left: 3px solid #8ad4ff;
+    border-radius: 4px;
+    background: rgba(138, 212, 255, 0.06);
+    font: 10px var(--dashboard-font);
+    color: #999;
+    min-width: 0;
+    animation: fadeInRight 1s both;
+}
+.hb-card .hb-name { color: #8ad4ff; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-card .hb-state { color: #fff; font-size: 14px; font-weight: bold; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-card .hb-state::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 5px;
+    border-radius: 50%;
+    background: #777;
+    vertical-align: middle;
+}
+.hb-card .hb-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-card.good { border-left-color: #6fdc6f; }
+.hb-card.good .hb-state::before { background: #6fdc6f; box-shadow: 0 0 6px #6fdc6f; }
+.hb-card.live .hb-state::before { animation: hbPulse 1.2s ease-in-out infinite; }
+.hb-card.warn { border-left-color: #ffc23c; }
+.hb-card.warn .hb-state { color: #ffc23c; }
+.hb-card.warn .hb-state::before { background: #ffc23c; box-shadow: 0 0 6px #ffc23c; }
+.hb-card.bad { border-left-color: #ff5a3c; }
+.hb-card.bad .hb-state { color: #ff5a3c; }
+.hb-card.bad .hb-state::before { background: #ff5a3c; box-shadow: 0 0 6px #ff5a3c; animation: hbPulse 0.8s ease-in-out infinite; }
+@keyframes hbPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
 }
 #menuToggle
 {
   display: block;
   position: relative;
-  float: left;
-  top: 50;
-  left: 50;
-  margin-left:12px;
-  margin-top:5px;
+        width: 40px;
+        margin-top: 4px;
   
   z-index: 1;
   
@@ -719,11 +819,13 @@ hr { width: 85%;
  */
  #menu
  {
-   position: relative;
-   width: 300px;
-   margin: -100px 0 0 -50px;
-   padding: 50px;
-   padding-top: 125px;
+         position: absolute;
+         box-sizing: border-box;
+         width: min(300px, calc(100vw - 24px));
+         top: -16px;
+         left: -12px;
+         margin: 0;
+         padding: 64px 24px 24px;
    
    background: #000000;
    color:#FFFFFF;
@@ -769,6 +871,22 @@ a:active
 #menuToggle input:checked ~ ul
 {
   transform: none;
+}
+
+@media only screen and (max-width:700px) {
+    .header-block { grid-template-columns: 36px minmax(0, 1fr); gap: 8px; padding: 8px; }
+    .header-info { grid-column: 1 / -1; grid-row: 2; }
+    .header-hb { grid-column: 2; grid-row: 1; }
+    .header-hb > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+    .header-hb #logo { width: 40px; margin: 0; object-fit: contain; }
+    .hb-title { display: none; }
+    .hb-card { flex: 0 1 100px; margin: 0; }
+    #headerTabs { text-align: center; }
+    #globe { height: 340px; }
+    #health { height: 620px; padding: 8px 0; }
+    .health-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .health-charts { flex-direction: column; }
+    #healthPie, #healthHourly { flex: 1 1 0; }
 }
 
 .btn-group button {
