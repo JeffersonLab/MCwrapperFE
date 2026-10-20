@@ -1281,31 +1281,44 @@ function RenderHeartbeats(data)
 
 function checkForeman()
 {
-    if (window.XMLHttpRequest) {
-            // code for IE7+, Firefox, Chrome, Opera, Safari
-            xmlhttp = new XMLHttpRequest();
-        } else {
-            // code for IE6, IE5
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    $.getJSON("./php/isForeman.php", {profile: 1}).done(function(profile){
+        if(profile === 0 || profile === 1)
+        {
+            foreman = profile;
+            return;
         }
-        xmlhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                //console.log(this.responseText)
-                if(this.responseText != "")
-                {
-                
-                foreman=parseInt(this.responseText);
-
-                }
-                
+        if(!profile || (profile.foreman !== 0 && profile.foreman !== 1))
+            return;
+        foreman = profile.foreman;
+        if(typeof profile.font === "string" && profile.font.trim())
+        {
+            function refreshFont()
+            {
+                if(lastHealth) RenderHealth(lastHealth);
+                if(document.fonts)
+                    document.fonts.ready.then(function(){ if(lastHealth) RenderHealth(lastHealth); });
             }
-        };
-        
-         
-
-        console.log("./php/isForeman.php");
-        xmlhttp.open("GET","./php/isForeman.php",true);
-        xmlhttp.send();
+            var stylesheet = document.getElementById("userFontStylesheet");
+            if(typeof profile.webFont === "string" && profile.webFont.trim())
+            {
+                if(!stylesheet)
+                {
+                    stylesheet = document.createElement("link");
+                    stylesheet.id = "userFontStylesheet";
+                    stylesheet.rel = "stylesheet";
+                    document.head.appendChild(stylesheet);
+                }
+                stylesheet.onload = refreshFont;
+                var href = "https://fonts.googleapis.com/css2?family=" + encodeURIComponent(profile.webFont) + "&display=swap";
+                if(stylesheet.getAttribute("href") !== href)
+                    stylesheet.href = href;
+            }
+            else if(stylesheet)
+                stylesheet.parentNode.removeChild(stylesheet);
+            document.documentElement.style.setProperty("--dashboard-font", profile.font);
+            refreshFont();
+        }
+    });
 }
 
 function QueryDatabase()
@@ -2215,8 +2228,8 @@ function GetNews()
                     <button type="button" class="health-range" onclick="SaveHealthPng()" title="Save the Health panel as a PNG">&#x2913; PNG</button>
                     <span class="health-foot" id="healthFoot">loading&hellip;</span></div>
                 <div class="health-kpis">
-                    <div class="health-kpi" id="hk-attempts"><div class="lbl">Attempts finished</div><div class="val">&ndash;</div><div class="sub"></div></div>
                     <div class="health-kpi" id="hk-success"><div class="lbl">Success</div><div class="val">&ndash;</div><div class="sub"></div></div>
+                    <div class="health-kpi" id="hk-attempts"><div class="lbl">Attempts finished</div><div class="val">&ndash;</div><div class="sub"></div></div>
                     <div class="health-kpi" id="hk-idle"><div class="lbl">Idle</div><div class="val">&ndash;</div><div class="sub"></div></div>
                     <div class="health-kpi" id="hk-running"><div class="lbl">Running / held</div><div class="val">&ndash;</div><div class="sub"></div></div>
                     <div class="health-kpi" id="hk-eta"><div class="lbl">Queue empty in</div><div class="val">&ndash;</div><div class="sub"></div></div>
